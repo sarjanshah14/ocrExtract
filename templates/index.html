@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NAVNEET TEXT EXTRACTION TOOL</title>
+  <style>
+    :root{
+      --navy: #0b2545;
+      --soft-bg: #f3f7fb;
+      --card-bg: #ffffff;
+      --muted-gray: #8b9bb5;
+      --accent: #ff7a3d;
+      --accent-weak: rgba(255,122,61,0.12);
+      --dashed-blue: #9ec5ff;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(11,37,69,0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    /* FIX: Ensures the navbar is full width and layout is non-scrolling */
+    html,body{height:100%;margin:0;background:var(--soft-bg);padding:0;} 
+
+    /* Header / Navbar */
+    header{
+      width:100%;background:var(--navy);color:white;padding:22px 16px;box-sizing:border-box;text-align:center;position:fixed;top:0;left:0;z-index:10;
+      box-shadow: 0 2px 6px rgba(2,12,34,0.08);
+    }
+    header h1{margin:0;font-weight:800;letter-spacing:2px;font-size:14px;text-transform:uppercase;}
+
+    /* Center container */
+    .page-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:120px 20px 40px;box-sizing:border-box;}
+
+    /* Card */
+    .card{width:100%;max-width:550px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:42px 40px;box-sizing:border-box;text-align:center}
+    .card h2{margin:0 0 18px;font-size:20px;color:#102a4a;font-weight:700}
+    .subtitle{font-size:13px;color:var(--muted-gray);margin-bottom:26px}
+
+    /* Dropzone */
+    .dropzone{
+      border-radius:10px;padding:34px 26px;border:2px dashed var(--dashed-blue);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;cursor:pointer;transition:all .18s ease-in-out;background:linear-gradient(180deg, rgba(158,197,255,0.04) 0%, rgba(255,255,255,0) 100%);
+    }
+    .dropzone.dragover{border-color:var(--accent);box-shadow:0 8px 30px rgba(15,80,150,0.06);transform:translateY(-2px)}
+
+    .drop-icon{width:64px;height:64px;margin-bottom:12px;opacity:0.96}
+    .drop-text{font-size:15px;color:#16324a;font-weight:600}
+    .drop-muted{font-size:13px;color:var(--muted-gray);margin-top:6px}
+
+    /* Hidden default input */
+    input[type=file]{display:none}
+
+    /* Filename area */
+    .file-info{margin-top:14px;font-size:13px;color:var(--muted-gray);min-height: 16px;} 
+
+    /* CTA (Convert Button) */
+    .btn{
+      display:inline-block;margin-top:28px;padding:14px 28px;border-radius:999px;background:var(--accent);color:white;font-weight:700;border:none;cursor:pointer;font-size:15px;box-shadow:0 8px 20px rgba(255,122,61,0.12);transition:transform .12s ease,opacity .12s ease;text-decoration: none;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.disabled{opacity:0.6;cursor:not-allowed;box-shadow:none}
+
+    /* Processing/Error States */
+    .status-panel { display: none; text-align: center; }
+    .status-icon { font-size: 3em; margin-bottom: 15px; }
+    .spinner {
+      border: 6px solid #e0e0e0; border-top: 6px solid var(--navy); border-radius: 50%;
+      width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 25px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error-text { color: #d9534f; font-weight: 600; margin-top: 15px; }
+    .success-text { color: #388e3c; font-weight: 600; margin-top: 15px; }
+    
+    /* Specific Button Styles for Success/Download Panel */
+    .download-btn { /* Use the existing accent color for the primary action */
+      margin-right: 15px;
+      margin-top: 28px;
+    }
+    .new-extraction-btn { /* Make the 'Start New' button green/success color */
+      margin-top: 28px;
+      padding: 14px 28px;
+      border-radius: 999px;
+      background: #388e3c; /* Green color */
+      color: white;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      box-shadow: 0 8px 20px rgba(56, 142, 60, 0.12);
+      transition: transform .12s ease,opacity .12s ease;
+    }
+    .new-extraction-btn:hover { background: #2e7d32; }
+
+    /* Small note */
+    .note{margin-top:10px;font-size:12px;color:var(--muted-gray)}
+
+    /* Non-scroll layout ensure */
+    @media (max-height:620px){
+      .page-wrap{align-items:flex-start;padding-top:100px;padding-bottom:40px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NAVNEET TEXT EXTRACTION TOOL</h1>
+  </header>
+
+  <main class="page-wrap">
+    <div class="card" role="main">
+      
+      <div id="uploadPanel" class="status-panel">
+        <h2>Attach File to Convert</h2>
+        <div class="subtitle">Upload a scanned image or PDF. We will convert it into a DOCX document.</div>
+
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,application/pdf" />
+
+        <label id="dropzone" class="dropzone" for="fileInput" tabindex="0" aria-label="Drag and drop file here or click to browse">
+          <svg class="drop-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <path d="M16.5 10.5L12 6l-4.5 4.5" stroke="#0b2545" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <rect x="3" y="10.5" width="18" height="9" rx="2" stroke="#0b2545" stroke-width="1.2" fill="var(--accent-weak)"/>
+          </svg>
+          <div class="drop-text">Drag &amp; Drop a file here or <strong>Click to Browse</strong></div>
+          <div class="drop-muted">Supported: JPG, PNG, PDF</div>
+        </label>
+
+        <div id="fileInfo" class="file-info" aria-live="polite"></div>
+
+        <button id="convertBtn" class="btn disabled" disabled>Convert to DOCX</button>
+        <div class="note">Output will be returned as a downloadable .docx file</div>
+      </div>
+      
+      <div id="processingPanel" class="status-panel">
+          <div class="spinner"></div>
+          <h2>Processing Document...</h2>
+          <div class="subtitle">Extracting text using Gemini OCR. Please wait.</div>
+      </div>
+      
+      <div id="downloadPanel" class="status-panel">
+          <div class="status-icon">🎉</div>
+          <h2>Conversion Complete!</h2>
+          <div class="success-text">Your document is ready.</div>
+          
+          <a id="downloadLink" href="#" class="btn download-btn">Download .docx File</a>
+          
+          <button onclick="window.location.reload()" class="btn new-extraction-btn">Start New Extraction</button>
+      </div>
+      
+      <div id="errorPanel" class="status-panel">
+          <div class="status-icon" style="color:#d9534f;">❌</div>
+          <h2>Conversion Failed!</h2>
+          <div id="errorMessage" class="error-text"></div>
+          <button onclick="window.location.reload()" class="btn new-extraction-btn">Try Again</button>
+      </div>
+      
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      // Elements
+      const fileInput = document.getElementById('fileInput');
+      const dropzone = document.getElementById('dropzone');
+      const fileInfo = document.getElementById('fileInfo');
+      const convertBtn = document.getElementById('convertBtn');
+      const downloadLink = document.getElementById('downloadLink');
+      const errorMessageDisplay = document.getElementById('errorMessage');
+      
+      // Panels
+      const uploadPanel = document.getElementById('uploadPanel');
+      const processingPanel = document.getElementById('processingPanel');
+      const downloadPanel = document.getElementById('downloadPanel');
+      const errorPanel = document.getElementById('errorPanel');
+      
+      let chosenFile = null;
+
+      // --- UI Management ---
+      function showPanel(panel){
+        uploadPanel.style.display = 'none';
+        processingPanel.style.display = 'none';
+        downloadPanel.style.display = 'none';
+        errorPanel.style.display = 'none';
+        panel.style.display = 'block';
+      }
+
+      function setFile(f){
+        chosenFile = f;
+        if(!f) {
+          fileInfo.textContent = '';
+          convertBtn.classList.add('disabled'); convertBtn.disabled = true; return;
+        }
+        fileInfo.textContent = `Selected: ${f.name} (${Math.round(f.size/1024)} KB)`;
+        convertBtn.classList.remove('disabled'); convertBtn.disabled = false;
+      }
+
+      // --- Event Handlers (Drag & Drop, File Selection) ---
+      dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
+      dropzone.addEventListener('dragleave', ()=>{ dropzone.classList.remove('dragover'); });
+      dropzone.addEventListener('drop', (e)=>{
+        e.preventDefault(); dropzone.classList.remove('dragover');
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if(f) { fileInput.files = e.dataTransfer.files; setFile(f); }
+      });
+      fileInput.addEventListener('change', (e)=>{
+        const f = e.target.files && e.target.files[0];
+        setFile(f || null);
+      });
+
+      // --- Convert button: AJAX POST to Flask route /upload ---
+      convertBtn.addEventListener('click', async ()=>{
+        if(!chosenFile) return;
+        
+        showPanel(processingPanel);
+        
+        const originalFilename = chosenFile.name.split('.').slice(0, -1).join('.');
+        const outputFilename = `${originalFilename}_OCR.docx`; // Construct the new name
+
+        try{
+          const fd = new FormData(); fd.append('file', chosenFile);
+          
+          const res = await fetch('/upload', { method: 'POST', body: fd });
+          
+          if(!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || `Conversion failed with status: ${res.status}`);
+          }
+
+          const blob = await res.blob();
+          const fileUrl = window.URL.createObjectURL(blob);
+          
+          // Set download link properties to trigger download
+          downloadLink.href = fileUrl;
+          downloadLink.download = outputFilename; // Sets the filename to match input
+          
+          showPanel(downloadPanel);
+          
+          // Clean up the temporary object URL after a short delay
+          setTimeout(() => window.URL.revokeObjectURL(fileUrl), 60000); 
+
+        }catch(err){
+          console.error("Conversion Error:", err); 
+          // Check for the known Flask error and simplify the message
+          let displayMessage = err.message;
+          if (displayMessage.includes("No name provided for attachment")) {
+             displayMessage = "Configuration Error: Server is missing required attachment settings.";
+          }
+          
+          errorMessageDisplay.textContent = displayMessage || 'An unexpected error occurred during processing.';
+          showPanel(errorPanel);
+        }finally{
+          // Reset file input state for potential new extraction
+          fileInput.value = ''; 
+          setFile(null); 
+        }
+      });
+
+      // Initial state
+      showPanel(uploadPanel);
+    })();
+  </script>
+</body>
+</html>

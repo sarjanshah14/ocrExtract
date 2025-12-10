@@ -1,0 +1,26 @@
+# Python Virtual Environment
+env/
+venv/
+env1/  # Add your specific environment name
+
+# Bytecode files
+*.pyc
+__pycache__/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Flask/Server
+instance/
+.flaskenv
+
+# Temporary/Cache Files
+.DS_Store
+*.swp
+uploads/  # Ignore the uploads folder entirely
+
+# Secret Keys/Local Configuration
+.env       # CRITICAL: Ignores the local file where your GEMINI_API_KEY is stored
+*secret*
