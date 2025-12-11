@@ -39,9 +39,74 @@ OCR_PROMPT = (
 # --- END GEMINI CONFIGURATION ---
 
 
-# --- CORE PROCESSING FUNCTION (Remains the same as the final version) ---
+# --- CORE PROCESSING FUNCTION (Memory Optimized) ---
 def process_document(input_file_path, prompt, client):
     document = Document()
+    pdf_document = None  # Initialize to None for cleanup safety
+    pages_to_process = []
+    
+    try:
+        if input_file_path.lower().endswith(('.pdf')):
+            pdf_document = fitz.open(input_file_path) 
+            num_pages = len(pdf_document)
+            
+            # Use a smaller scaling factor (150/72 = ~2.08) to save memory
+            scale_factor = 150 / 72  
+            matrix = fitz.Matrix(scale_factor, scale_factor)
+            
+            for i in range(num_pages):
+                page = pdf_document.load_page(i)
+                pix = page.get_pixmap(matrix=matrix) 
+                
+                # Convert pixmap directly to PNG bytes stream
+                png_bytes = pix.tobytes(output='png')
+                
+                # Use io.BytesIO to treat the bytes as a file for PIL
+                image_stream = io.BytesIO(png_bytes)
+                pages_to_process.append(image_stream)
+            
+        elif input_file_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+            # For images, we just pass the file path to open it later
+            pages_to_process = [input_file_path]
+            
+        else:
+            raise ValueError("Unsupported file type.")
+
+        # GEMINI PROCESSING LOOP
+        for i, page_source in enumerate(pages_to_process):
+            page_number = i + 1
+            
+            # Open the image from the stream (for PDF) or file path (for image)
+            with Image.open(page_source) as page_image:
+                response = client.models.generate_content(
+                    model=MODEL_ID, 
+                    contents=[prompt, page_image]
+                )
+            
+            extracted_text = response.text
+            
+            document.add_paragraph(f"\n--- Page {page_number} ---")
+            document.add_paragraph(extracted_text)
+            
+            if len(pages_to_process) > 1 and page_number < len(pages_to_process):
+                document.add_section(WD_SECTION.NEW_PAGE)
+                
+        doc_io = io.BytesIO()
+        document.save(doc_io)
+        doc_io.seek(0)
+        return doc_io
+
+    finally:
+        if pdf_document is not None:
+            pdf_document.close()
+            
+        # Cleanup: Remove the original uploaded file
+        if os.path.exists(input_file_path):
+            try: os.remove(input_file_path)
+            except: pass
+            
+        # IMPORTANT: The temporary PNG images for PDF pages are no longer saved,
+        # so this cleanup section is greatly simplified.    document = Document()
     temp_images = []
     pdf_document = None  # Initialize to None for cleanup safety
     
