@@ -18,9 +18,10 @@ except ImportError:
 
 # --- FLASK SETUP ---
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = './uploads'
+app.config['UPLOAD_FOLDER'] = './tmp/uploads'
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+    # os.makedirs(app.config['UPLOAD_FOLDER'])
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- GEMINI CONFIGURATION ---
 # IMPORTANT: This loads the key from the environment (Render UI or local .env)
