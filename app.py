@@ -17,7 +17,8 @@ try:
 except ImportError:
     pass 
     
-# --- FLASK SETUP (Gunicorn requires this 'app' object) ---
+# 1. --- FLASK SETUP --- (Gunicorn looks for this object)
+# This MUST be defined globally and early.
 app = Flask(__name__)
 # Temporary folder to store uploaded files
 app.config['UPLOAD_FOLDER'] = './tmp/uploads'
@@ -120,7 +121,6 @@ def process_document(input_file_path, prompt, client):
             try: 
                 os.remove(input_file_path)
             except Exception as e:
-                # Log an error, but don't fail the request
                 print(f"Warning: Could not delete original file {input_file_path}. {e}", file=sys.stderr)
 
 
@@ -129,7 +129,6 @@ def process_document(input_file_path, prompt, client):
 @app.route('/', methods=['GET'])
 def index():
     # Renders the HTML form for file upload.
-    # Assumes 'templates/index.html' exists
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
@@ -147,7 +146,6 @@ def upload_and_convert():
     filepath = None
     
     if file:
-        # Use a secure filename
         filename = os.path.basename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
@@ -175,6 +173,5 @@ def upload_and_convert():
         except ValueError as e:
             return str(e), 400
         except Exception as e:
-            # Catch all other unexpected errors
             print(f"An unexpected error occurred during processing: {e}", file=sys.stderr)
             return "An internal conversion error occurred. Check the server logs.", 500
