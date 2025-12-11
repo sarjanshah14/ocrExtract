@@ -13,6 +13,7 @@
       --accent: #ff7a3d;
       --accent-weak: rgba(255,122,61,0.12);
       --dashed-blue: #9ec5ff;
+      --success-green: #388e3c; /* New variable for success color */
       --radius: 14px;
       --shadow: 0 8px 24px rgba(11,37,69,0.08);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -40,6 +41,13 @@
       border-radius:10px;padding:34px 26px;border:2px dashed var(--dashed-blue);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;cursor:pointer;transition:all .18s ease-in-out;background:linear-gradient(180deg, rgba(158,197,255,0.04) 0%, rgba(255,255,255,0) 100%);
     }
     .dropzone.dragover{border-color:var(--accent);box-shadow:0 8px 30px rgba(15,80,150,0.06);transform:translateY(-2px)}
+    
+    /* NEW: Style for when a file is successfully selected (Feature 3) */
+    .dropzone.file-selected {
+      border-color: var(--success-green); 
+      box-shadow: 0 4px 10px rgba(56, 142, 60, 0.15); 
+      background: rgba(56, 142, 60, 0.04); 
+    }
 
     .drop-icon{width:64px;height:64px;margin-bottom:12px;opacity:0.96}
     .drop-text{font-size:15px;color:#16324a;font-weight:600}
@@ -48,8 +56,8 @@
     /* Hidden default input */
     input[type=file]{display:none}
 
-    /* Filename area */
-    .file-info{margin-top:14px;font-size:13px;color:var(--muted-gray);min-height: 16px;} 
+    /* Filename area (Feature 2) */
+    .file-info{margin-top:14px;font-size:13px;color:var(--muted-gray);min-height: 36px; line-height: 1.4;} 
 
     /* CTA (Convert Button) */
     .btn{
@@ -118,7 +126,7 @@
             <rect x="3" y="10.5" width="18" height="9" rx="2" stroke="#0b2545" stroke-width="1.2" fill="var(--accent-weak)"/>
           </svg>
           <div class="drop-text">Drag &amp; Drop a file here or <strong>Click to Browse</strong></div>
-          <div class="drop-muted">Supported: JPG, PNG, PDF</div>
+          <div class="drop-muted">Supported: JPG, PNG, PDF (Max file size: 20 MB)</div>
         </label>
 
         <div id="fileInfo" class="file-info" aria-live="polite"></div>
@@ -155,6 +163,10 @@
 
   <script>
     (function(){
+      // Constants
+      const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB (Feature 1)
+      const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf']; // (Feature 1)
+
       // Elements
       const fileInput = document.getElementById('fileInput');
       const dropzone = document.getElementById('dropzone');
@@ -180,14 +192,44 @@
         panel.style.display = 'block';
       }
 
+      // Function to handle file selection and validation (Features 1, 2, 3)
       function setFile(f){
         chosenFile = f;
-        if(!f) {
-          fileInfo.textContent = '';
-          convertBtn.classList.add('disabled'); convertBtn.disabled = true; return;
+        fileInfo.innerHTML = ''; // Reset
+        convertBtn.classList.add('disabled');
+        convertBtn.disabled = true;
+        dropzone.classList.remove('file-selected'); // Remove selected state (Feature 3)
+
+        if(!f) { return; }
+
+        const fileSizeMB = (f.size / (1024 * 1024)).toFixed(2);
+
+        // 1. Client-Side Validation
+        if (f.size > MAX_FILE_SIZE_BYTES) {
+            fileInfo.innerHTML = `<span class="error-text">Error:</span> File is too large (${fileSizeMB} MB). Max allowed size is ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB.`;
+            chosenFile = null; 
+            return;
         }
-        fileInfo.textContent = `Selected: ${f.name} (${Math.round(f.size/1024)} KB)`;
-        convertBtn.classList.remove('disabled'); convertBtn.disabled = false;
+        if (!ALLOWED_MIME_TYPES.includes(f.type)) {
+            fileInfo.innerHTML = `<span class="error-text">Error:</span> Unsupported file type. Please use JPG, PNG, or PDF.`;
+            chosenFile = null; 
+            return;
+        }
+
+
+        // 2. Successful File Info & Preview
+        const originalFilename = f.name;
+        // Match the naming convention from the Python backend (Feature 4)
+        const outputFilename = originalFilename.split('.').slice(0, -1).join('.') + '_OCR_Structured.docx'; 
+        
+        fileInfo.innerHTML = `
+            Selected: <span style="font-weight:600;">${originalFilename}</span> (${fileSizeMB} MB)<br>
+            Output Name: <span style="font-weight:600; color: var(--navy);">${outputFilename}</span>
+        `;
+        
+        convertBtn.classList.remove('disabled');
+        convertBtn.disabled = false;
+        dropzone.classList.add('file-selected'); // Add selected state (Feature 3)
       }
 
       // --- Event Handlers (Drag & Drop, File Selection) ---
@@ -209,8 +251,9 @@
         
         showPanel(processingPanel);
         
+        // Construct the name to use for the download attribute (Feature 4)
         const originalFilename = chosenFile.name.split('.').slice(0, -1).join('.');
-        const outputFilename = `${originalFilename}_OCR.docx`; // Construct the new name
+        const outputFilename = `${originalFilename}_OCR_Structured.docx`; 
 
         try{
           const fd = new FormData(); fd.append('file', chosenFile);
@@ -227,7 +270,7 @@
           
           // Set download link properties to trigger download
           downloadLink.href = fileUrl;
-          downloadLink.download = outputFilename; // Sets the filename to match input
+          downloadLink.download = outputFilename; // Sets the desired filename
           
           showPanel(downloadPanel);
           
@@ -238,9 +281,15 @@
           console.error("Conversion Error:", err); 
           // Check for the known Flask error and simplify the message
           let displayMessage = err.message;
-          if (displayMessage.includes("No name provided for attachment")) {
-             displayMessage = "Configuration Error: Server is missing required attachment settings.";
-          }
+          
+          // Display only the user-friendly part of the message if possible
+          if (displayMessage.includes("Conversion failed with status: 400")) {
+            displayMessage = displayMessage.replace("Conversion failed with status: 400", "Server returned an error:");
+          } else if (displayMessage.includes("Failed to fetch")) {
+            displayMessage = "Network error. Could not connect to the server.";
+          } else if (displayMessage.includes("Server Error: Gemini API key is missing")) {
+                displayMessage = "Configuration Error: The server's API key is not set."
+            }
           
           errorMessageDisplay.textContent = displayMessage || 'An unexpected error occurred during processing.';
           showPanel(errorPanel);
