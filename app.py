@@ -3,7 +3,7 @@ import fitz # PyMuPDF for PDF handling
 import io
 import sys
 from google import genai
-from PIL import Image
+from PIL import Image, ImageEnhance
 from docx import Document
 from docx.enum.section import WD_SECTION
 from flask import Flask, request, render_template, send_file
@@ -43,7 +43,30 @@ OCR_PROMPT = (
 )
 # --- END GEMINI CONFIGURATION ---
 
+def preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
+    """
+    Light preprocessing optimized for AI vision models.
+    Improves readability without destroying handwriting.
+    """
 
+    # Ensure RGB (Gemini prefers RGB)
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+
+    # Resize if too large (prevents model overload)
+    max_width = 1800
+    if image.width > max_width:
+        ratio = max_width / image.width
+        new_size = (max_width, int(image.height * ratio))
+        image = image.resize(new_size, Image.LANCZOS)
+
+    # Increase contrast slightly
+    image = ImageEnhance.Contrast(image).enhance(1.3)
+
+    # Increase sharpness slightly
+    image = ImageEnhance.Sharpness(image).enhance(1.2)
+
+    return image
 # --- CORE PROCESSING FUNCTION (Memory Optimized) ---
 def process_document(input_file_path, prompt, client):
     """
@@ -86,10 +109,13 @@ def process_document(input_file_path, prompt, client):
             page_number = i + 1
             
             with Image.open(page_source) as page_image:
+                processed_image = preprocess_image_for_ocr(page_image)
+
                 response = client.models.generate_content(
-                    model=MODEL_ID, 
-                    contents=[prompt, page_image]
+                    model=MODEL_ID,
+                    contents=[prompt, processed_image]
                 )
+
             
             extracted_text = response.text
             
