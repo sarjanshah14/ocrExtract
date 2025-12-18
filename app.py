@@ -3,6 +3,7 @@ import fitz # PyMuPDF for PDF handling
 import io
 import sys
 from google import genai
+from google.genai import types
 from PIL import Image, ImageEnhance
 from docx import Document
 from docx.enum.section import WD_SECTION
