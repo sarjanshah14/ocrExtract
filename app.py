@@ -1,234 +1,163 @@
 import os
-import fitz # PyMuPDF for PDF handling
+import fitz  # PyMuPDF
 import io
 import sys
 from google import genai
-from google.genai import types
 from PIL import Image, ImageEnhance
 from docx import Document
 from docx.enum.section import WD_SECTION
 from flask import Flask, request, render_template, send_file
-# Note: Ensure all dependencies are installed: pip install Flask google-genai pymupdf Pillow python-docx python-dotenv
 
-# --- ENVIRONMENT SETUP ---
-# Load environment variables from .env file if it exists
+# ----------------------------------------
+# ENV SETUP
+# ----------------------------------------
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    pass 
-    
-# 1. --- FLASK SETUP --- (Gunicorn looks for this object)
-# This MUST be defined globally and early.
+    pass
+
 app = Flask(__name__)
-# Temporary folder to store uploaded files
-app.config['UPLOAD_FOLDER'] = './tmp/uploads'
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    # Create the directory if it doesn't exist
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app.config["UPLOAD_FOLDER"] = "./tmp/uploads"
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# --- GEMINI CONFIGURATION ---
-API_KEY = os.environ.get("GEMINI_API_KEY") 
-MODEL_ID = "gemini-2.5-flash-lite" 
+# ----------------------------------------
+# GEMINI CONFIG
+# ----------------------------------------
+API_KEY = os.environ.get("GEMINI_API_KEY")
+MODEL_ID = "gemini-2.5-flash-lite"
 
-# REVISED PROMPT for LOGICAL STRUCTURE and CLEAN READABILITY
 OCR_PROMPT = (
     "You are a literal Optical Character Recognition (OCR) engine.\n\n"
 
-    "LANGUAGE & SCRIPT HANDLING:\n"
-    "- Detect the language strictly from the script visible in the image.\n"
-    "- Gujarati script MUST be output as Gujarati.\n"
-    "- Devanagari script MUST remain Devanagari (Hindi or Marathi as-is).\n"
-    "- English text must remain English.\n"
-    "- Do NOT translate between languages.\n\n"
+    "LANGUAGE & SCRIPT:\n"
+    "- Detect language strictly from the script.\n"
+    "- Gujarati script → Gujarati output.\n"
+    "- Devanagari → keep as-is (Hindi/Marathi).\n"
+    "- English stays English.\n"
+    "- DO NOT translate.\n\n"
 
-    "TEXT EXTRACTION RULES (VERY IMPORTANT):\n"
-    "- Output EXACTLY what is visually read.\n"
-    "- Do NOT guess words.\n"
-    "- Do NOT replace unclear words with similar or common words.\n"
-    "- Do NOT autocorrect spelling.\n"
-    "- Do NOT normalize grammar.\n"
-    "- If a word looks incorrect, still reproduce it exactly.\n"
-    "- If a word is partially unclear, reproduce the visible characters only.\n\n"
+    "ACCURACY RULES:\n"
+    "- Output exactly what is visible.\n"
+    "- DO NOT guess words.\n"
+    "- DO NOT autocorrect spelling.\n"
+    "- DO NOT normalize grammar.\n"
+    "- If unclear, reproduce visible characters only.\n\n"
 
-    "STRUCTURE & LINE BREAKS:\n"
-    "- Preserve logical reading order (top to bottom, left to right).\n"
-    "- Start each question, instruction, or heading on a new line.\n"
-    "- Insert ONE blank line between unrelated blocks.\n"
-    "- Keep each multiple-choice option on its own line.\n"
-    "- Do NOT merge separate questions or options.\n\n"
+    "LAYOUT:\n"
+    "- Maintain reading order (top to bottom).\n"
+    "- New line for each question, instruction, or option.\n"
+    "- ONE blank line between unrelated blocks.\n\n"
 
-    "OUTPUT RESTRICTIONS:\n"
-    "- Output ONLY plain text.\n"
-    "- Do NOT include explanations, notes, or labels.\n"
-    "- Do NOT include HTML or Markdown.\n"
+    "OUTPUT:\n"
+    "- Plain text only.\n"
+    "- No explanations.\n"
+    "- No HTML or Markdown."
 )
 
-# --- END GEMINI CONFIGURATION ---
-
-def preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
-    """
-    Conservative preprocessing.
-    Avoids over-enhancement which causes Gemini to guess words.
-    """
-
+# ----------------------------------------
+# IMAGE PREPROCESSING (CONSERVATIVE)
+# ----------------------------------------
+def preprocess_image(image: Image.Image) -> Image.Image:
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    # Mild resize only (too large = hallucination)
-    max_width = 1600
-    if image.width > max_width:
-        ratio = max_width / image.width
+    if image.width > 1600:
+        ratio = 1600 / image.width
         image = image.resize(
-            (max_width, int(image.height * ratio)),
+            (1600, int(image.height * ratio)),
             Image.BICUBIC
         )
 
-    # VERY LIGHT contrast (do not overdo)
     image = ImageEnhance.Contrast(image).enhance(1.15)
-
-    # Avoid sharpening handwriting too much
     image = ImageEnhance.Sharpness(image).enhance(1.05)
-
     return image
 
-# --- CORE PROCESSING FUNCTION (Memory Optimized) ---
-def process_document(input_file_path, prompt, client):
-    """
-    Processes a PDF or image file by converting pages to in-memory streams 
-    (for PDF) or using the file path (for image) and sending them to Gemini for OCR.
-    Returns an io.BytesIO stream containing the DOCX file content.
-    """
+# ----------------------------------------
+# CORE OCR FUNCTION
+# ----------------------------------------
+def process_document(input_path, prompt, client):
     document = Document()
-    pdf_document = None
-    pages_to_process = []
-    
-    if client is None:
-        raise Exception("Gemini client is not initialized. API key missing.")
-    
-    try:
-        # 1. Prepare pages for processing
-        if input_file_path.lower().endswith(('.pdf')):
-            pdf_document = fitz.open(input_file_path) 
-            num_pages = len(pdf_document)
-            
-            # Use 150 DPI scaling factor for good quality
-            scale_factor = 150 / 72  
-            matrix = fitz.Matrix(scale_factor, scale_factor)
-            
-            for i in range(num_pages):
-                page = pdf_document.load_page(i)
-                pix = page.get_pixmap(matrix=matrix) 
-                png_bytes = pix.tobytes(output='png')
-                image_stream = io.BytesIO(png_bytes)
-                pages_to_process.append(image_stream)
-            
-        elif input_file_path.lower().endswith(('.jpg', '.jpeg', '.png')):
-            pages_to_process = [input_file_path]
-            
-        else:
-            raise ValueError("Unsupported file type. Please upload a PDF, JPG, or PNG.")
+    pdf_doc = None
+    pages = []
 
-        # 2. GEMINI PROCESSING LOOP
-        for i, page_source in enumerate(pages_to_process):
-            page_number = i + 1
-            
-            with Image.open(page_source) as page_image:
-                processed_image = preprocess_image_for_ocr(page_image)
+    try:
+        if input_path.lower().endswith(".pdf"):
+            pdf_doc = fitz.open(input_path)
+            matrix = fitz.Matrix(150 / 72, 150 / 72)
+
+            for i in range(len(pdf_doc)):
+                page = pdf_doc.load_page(i)
+                pix = page.get_pixmap(matrix=matrix)
+                pages.append(io.BytesIO(pix.tobytes("png")))
+        else:
+            pages = [input_path]
+
+        for idx, src in enumerate(pages, start=1):
+            with Image.open(src) as img:
+                img = preprocess_image(img)
 
                 response = client.models.generate_content(
                     model=MODEL_ID,
-                    contents=[prompt, processed_image],
-                    config=types.GenerationConfig(
-                        temperature=0.0,
-                        top_p=0.1,
-                        max_output_tokens=8192
-                    )
+                    contents=[prompt, img]
                 )
 
+            text = response.text or "[NO TEXT RETURNED]"
 
-            
-            extracted_text = response.text
-            
-            # ⚠️ ROBUSTNESS CHECK: Check for empty text
-            if not extracted_text or extracted_text.strip() == "":
-                extracted_text = "\n--- OCR failed to return text for this page. Please review the original image quality. ---"
-            
-            # 3. Add content to DOCX document
-            document.add_paragraph(f"\n--- Page {page_number} ---")
-            document.add_paragraph(extracted_text)
-            
-            # Add a new page break in the DOCX for subsequent pages
-            if len(pages_to_process) > 1 and page_number < len(pages_to_process):
+            document.add_paragraph(f"\n--- Page {idx} ---")
+            document.add_paragraph(text)
+
+            if idx < len(pages):
                 document.add_section(WD_SECTION.NEW_PAGE)
-                
-        # 4. Save the final DOCX to an in-memory buffer
-        doc_io = io.BytesIO()
-        document.save(doc_io)
-        doc_io.seek(0)
-        return doc_io
+
+        output = io.BytesIO()
+        document.save(output)
+        output.seek(0)
+        return output
 
     finally:
-        # CLEANUP: Close PDF resource
-        if pdf_document is not None:
-            pdf_document.close()
-            
-        # Cleanup: Remove the original uploaded file
-        if os.path.exists(input_file_path):
-            try: 
-                os.remove(input_file_path)
-            except Exception as e:
-                print(f"Warning: Could not delete original file {input_file_path}. {e}", file=sys.stderr)
+        if pdf_doc:
+            pdf_doc.close()
+        if os.path.exists(input_path):
+            try:
+                os.remove(input_path)
+            except Exception:
+                pass
 
-
-# --- FLASK ROUTES ---
-
-@app.route('/', methods=['GET'])
+# ----------------------------------------
+# ROUTES
+# ----------------------------------------
+@app.route("/", methods=["GET"])
 def index():
-    # Renders the HTML form for file upload.
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/upload', methods=['POST'])
-def upload_and_convert():
+@app.route("/upload", methods=["POST"])
+def upload():
     if not API_KEY:
-        return "Server Error: Gemini API key is missing. Please set the GEMINI_API_KEY environment variable.", 500
-        
-    if 'file' not in request.files:
-        return 'No file part', 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return 'No selected file', 400
-    
-    filepath = None
-    
-    if file:
-        filename = os.path.basename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
-        # Save the file temporarily
-        try:
-            file.save(filepath)
-        except Exception as e:
-            return "Failed to save the uploaded file.", 500
+        return "GEMINI_API_KEY not set", 500
 
-        try:
-            # Initialize client for this request
-            gemini_client = genai.Client(api_key=API_KEY)
-            doc_stream = process_document(filepath, OCR_PROMPT, gemini_client)
-            
-            # Create a smart download name
-            output_filename = filename.rsplit('.', 1)[0] + '_OCR_Structured.docx'
-            
-            return send_file(
-                doc_stream,
-                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                as_attachment=True,
-                download_name=output_filename
-            )
-            
-        except ValueError as e:
-            return str(e), 400
-        except Exception as e:
-            print(f"An unexpected error occurred during processing: {e}", file=sys.stderr)
-            return "An internal conversion error occurred. Check the server logs.", 500
+    if "file" not in request.files:
+        return "No file uploaded", 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return "Empty filename", 400
+
+    path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+    file.save(path)
+
+    try:
+        client = genai.Client(api_key=API_KEY)
+        doc = process_document(path, OCR_PROMPT, client)
+
+        out_name = file.filename.rsplit(".", 1)[0] + "_OCR.docx"
+        return send_file(
+            doc,
+            as_attachment=True,
+            download_name=out_name,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    except Exception as e:
+        print("OCR ERROR:", e, file=sys.stderr)
+        return "OCR failed. Check server logs.", 500
