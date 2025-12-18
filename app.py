@@ -1,13 +1,12 @@
 import os
 import io
-import sys
-import fitz  # PyMuPDF
 from google import genai
 from PIL import Image, ImageEnhance
 from docx import Document
 from docx.shared import Pt
 from docx.enum.section import WD_SECTION
 from flask import Flask, request, render_template, send_file
+import fitz  # PyMuPDF
 
 # --------------------------------------------------
 # ENV SETUP
@@ -26,45 +25,39 @@ API_KEY = os.environ.get("GEMINI_API_KEY")
 MODEL_ID = "gemini-2.0-flash" 
 
 # --------------------------------------------------
-# REFINED RT-CROS PROMPT (HUMAN-CENTRIC)
+# MULTILINGUAL "HUMAN SCRIBE" PROMPT
 # --------------------------------------------------
-# This prompt uses a JSON structure to ensure the AI follows specific logic gates.
 OCR_PROMPT = """
 {
   "ROLE": "Expert Polyglot Scribe and Paleographer",
-  "TASK": "Verbatim transcription of handwritten documents in any detected language (Gujarati, Hindi, Marathi, or English).",
-  "CONTEXT": "You are reading handwritten documents that may switch between scripts or be written entirely in one regional language. You must act as a human would: recognize the language first, then transcribe the characters according to that specific language's rules.",
-  "REASON": "The user needs a digital version of handwritten notes that preserves the original language's integrity without machine-generated errors like mixing Latin letters into Indic scripts.",
-  "STRATEGY": {
-    "Detection_Logic": "Analyze the visual structure of the characters to identify the script (Devanagari, Gujarati, or Latin).",
-    "Verbatim_Rules": [
-      "Transcribe exactly what is written. If the text is in Gujarati, use only Gujarati characters.",
-      "STRICT ALPHABET BOUNDARY: Do not use English characters to represent phonetics in Indic scripts. Only use English if the author actually wrote in the English alphabet.",
-      "Maintain the flow and dialect of the writer without 'correcting' it to formal versions.",
-      "If a page contains multiple languages, preserve the transition exactly as it appears in the source."
-    ]
-  },
-  "OUTPUT_FORMAT": "Return only the transcribed text in its original script. No conversational filler, no source tags, and no meta-commentary.",
-  "STOPPING_CONDITION": "End output immediately after the last character of the document is transcribed."
+  "TASK": "Character-by-character transcription of the provided handwriting.",
+  "CONTEXT": "The image contains handwritten text in an Indic script (likely Gujarati, Hindi, or Marathi) or English. Previous machine attempts incorrectly mixed English letters into Indic words.",
+  "COGNITIVE_RULES": [
+    "Identify the script visually (e.g., Look for the Shirorekha line for Hindi/Marathi, or curved loops for Gujarati).",
+    "STRICT SCRIPT ISOLATION: Do not output English/Latin characters unless the word is explicitly written in that alphabet. Never use English letters to represent Indic phonetics (e.g., don't write 'maa' if the script is 'મા').",
+    "CONTEXTUAL RECOGNITION: If a stroke is messy, use the vocabulary of the detected language to resolve the word. Do not 'guess' using the English alphabet.",
+    "VERBATIM: Transcribe exactly what is written, preserving line breaks and paragraph structure."
+  ],
+  "OUTPUT_FORMAT": "Return ONLY the transcribed text in its original script. No meta-data, no 'source' tags, and no commentary."
 }
 """
 
 # --------------------------------------------------
-# IMAGE PREPROCESSING (BALANCED)
+# ADVANCED PREPROCESSING FOR HANDWRITING
 # --------------------------------------------------
 def preprocess_image(image: Image.Image) -> Image.Image:
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    # Increase resolution slightly for better handwriting recognition
-    target_width = 2000 
+    # Increase resolution (300 DPI equivalent) for finer pen-stroke detail
+    target_width = 2400 
     ratio = target_width / float(image.width)
     new_height = int(float(image.height) * float(ratio))
     image = image.resize((target_width, new_height), Image.Resampling.LANCZOS)
 
-    # Enhance contrast to separate ink from paper background
-    image = ImageEnhance.Contrast(image).enhance(1.4)
-    image = ImageEnhance.Sharpness(image).enhance(1.2)
+    # Aggressive contrast to separate faded ink from paper texture
+    image = ImageEnhance.Contrast(image).enhance(1.6)
+    image = ImageEnhance.Sharpness(image).enhance(1.5)
 
     return image
 
@@ -74,17 +67,17 @@ def preprocess_image(image: Image.Image) -> Image.Image:
 def process_document(input_path: str, prompt: str, client):
     doc = Document()
     
-    # Modern Document Styling
+    # Use Arial Unicode MS or Shruti (for Windows) to support all Indic scripts
     style = doc.styles['Normal']
     font = style.font
-    font.name = 'Arial Unicode MS' # Standard Windows Gujarati Font
+    font.name = 'Arial Unicode MS' 
     font.size = Pt(12)
 
     if input_path.lower().endswith(".pdf"):
         pdf = fitz.open(input_path)
         try:
-            matrix = fitz.Matrix(2, 2) # Higher resolution render
-
+            # Use 3x zoom for PDF-to-Image rendering
+            matrix = fitz.Matrix(3, 3) 
             for page_index in range(len(pdf)):
                 page = pdf.load_page(page_index)
                 pix = page.get_pixmap(matrix=matrix)
@@ -97,13 +90,10 @@ def process_document(input_path: str, prompt: str, client):
                 )
 
                 text = response.text.strip() if response.text else ""
-
                 if page_index > 0:
                     doc.add_section(WD_SECTION.NEW_PAGE)
                 
                 doc.add_paragraph(text)
-                del img
-                del pix
         finally:
             pdf.close()
     else:
