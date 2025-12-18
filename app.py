@@ -22,76 +22,73 @@ app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "./tmp/uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# --------------------------------------------------
-# GEMINI CONFIG & RT-CROS PROMPT
-# --------------------------------------------------
 API_KEY = os.environ.get("GEMINI_API_KEY")
-# Using 2.0 Flash for best vision/speed balance
 MODEL_ID = "gemini-2.0-flash" 
 
-# RT-CROS Structured Prompt
+# --------------------------------------------------
+# REFINED RT-CROS PROMPT (HUMAN-CENTRIC)
+# --------------------------------------------------
+# This prompt uses a JSON structure to ensure the AI follows specific logic gates.
 OCR_PROMPT = """
 {
-  "ROLE": "Expert Linguistic Forensic OCR Engine",
-  "TASK": "Perform a high-fidelity verbatim transcription of the provided image document.",
-  "CONTEXT": "The input is a scanned document containing potentially complex scripts (Gujarati, Devanagari, or English). The goal is to digitize this text for a professional DOCX report without any loss of data or linguistic nuance.",
-  "REASON": "The user requires an exact digital replica of the text for archival and editing purposes. Accuracy is paramount; hallucinations or 'corrections' of the original text will fail the mission.",
-  "OUTPUT_FORMAT": {
-    "TYPE": "Plain Text",
-    "RULES": [
-      "Preserve exact line breaks and paragraph spacing.",
-      "Maintain the original script (do not translate).",
-      "Do not include any commentary, headers, or metadata in the output.",
-      "Capture all punctuation and special characters exactly as they appear."
+  "ROLE": "Expert Polyglot Scribe and Paleographer",
+  "TASK": "Verbatim transcription of handwritten documents in any detected language (Gujarati, Hindi, Marathi, or English).",
+  "CONTEXT": "You are reading handwritten documents that may switch between scripts or be written entirely in one regional language. You must act as a human would: recognize the language first, then transcribe the characters according to that specific language's rules.",
+  "REASON": "The user needs a digital version of handwritten notes that preserves the original language's integrity without machine-generated errors like mixing Latin letters into Indic scripts.",
+  "STRATEGY": {
+    "Detection_Logic": "Analyze the visual structure of the characters to identify the script (Devanagari, Gujarati, or Latin).",
+    "Verbatim_Rules": [
+      "Transcribe exactly what is written. If the text is in Gujarati, use only Gujarati characters.",
+      "STRICT ALPHABET BOUNDARY: Do not use English characters to represent phonetics in Indic scripts. Only use English if the author actually wrote in the English alphabet.",
+      "Maintain the flow and dialect of the writer without 'correcting' it to formal versions.",
+      "If a page contains multiple languages, preserve the transition exactly as it appears in the source."
     ]
   },
-  "STOPPING_CONDITION": "Stop immediately once the last visible character at the bottom-right of the image has been transcribed. Do not add conversational filler."
+  "OUTPUT_FORMAT": "Return only the transcribed text in its original script. No conversational filler, no source tags, and no meta-commentary.",
+  "STOPPING_CONDITION": "End output immediately after the last character of the document is transcribed."
 }
 """
 
 # --------------------------------------------------
-# IMAGE PREPROCESSING
+# IMAGE PREPROCESSING (BALANCED)
 # --------------------------------------------------
 def preprocess_image(image: Image.Image) -> Image.Image:
-    """Enhances image for better OCR legibility."""
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    # Limit size to prevent OOM but keep high enough for small text
-    max_dim = 1800
-    if max(image.width, image.height) > max_dim:
-        image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+    # Increase resolution slightly for better handwriting recognition
+    target_width = 2000 
+    ratio = target_width / float(image.width)
+    new_height = int(float(image.height) * float(ratio))
+    image = image.resize((target_width, new_height), Image.Resampling.LANCZOS)
 
-    # Moderate Contrast & Sharpness for better glyph recognition
-    image = ImageEnhance.Contrast(image).enhance(1.2)
-    image = ImageEnhance.Sharpness(image).enhance(1.5)
+    # Enhance contrast to separate ink from paper background
+    image = ImageEnhance.Contrast(image).enhance(1.4)
+    image = ImageEnhance.Sharpness(image).enhance(1.2)
 
     return image
 
 # --------------------------------------------------
-# CORE OCR LOGIC
+# CORE LOGIC
 # --------------------------------------------------
 def process_document(input_path: str, prompt: str, client):
     doc = Document()
     
-    # Set default style for the Word Document
+    # Modern Document Styling
     style = doc.styles['Normal']
     font = style.font
-    font.name = 'Arial'
-    font.size = Pt(11)
+    font.name = 'Arial Unicode MS' # Standard Windows Gujarati Font
+    font.size = Pt(12)
 
     if input_path.lower().endswith(".pdf"):
         pdf = fitz.open(input_path)
         try:
-            # 144 DPI is a sweet spot for quality vs memory
-            matrix = fitz.Matrix(144 / 72, 144 / 72) 
+            matrix = fitz.Matrix(2, 2) # Higher resolution render
 
             for page_index in range(len(pdf)):
                 page = pdf.load_page(page_index)
                 pix = page.get_pixmap(matrix=matrix)
-                
-                img_data = io.BytesIO(pix.tobytes("png"))
-                img = Image.open(img_data)
+                img = Image.open(io.BytesIO(pix.tobytes("png")))
                 img = preprocess_image(img)
 
                 response = client.models.generate_content(
@@ -99,29 +96,24 @@ def process_document(input_path: str, prompt: str, client):
                     contents=[prompt, img]
                 )
 
-                text = response.text.strip() if response.text else "[Page empty or unreadable]"
+                text = response.text.strip() if response.text else ""
 
-                # Add content to Word
                 if page_index > 0:
                     doc.add_section(WD_SECTION.NEW_PAGE)
                 
-                p = doc.add_paragraph()
-                p.add_run(f"--- PAGE {page_index + 1} ---").bold = True
                 doc.add_paragraph(text)
-
                 del img
                 del pix
         finally:
             pdf.close()
     else:
-        # Process Single Image
         with Image.open(input_path) as img:
             img = preprocess_image(img)
             response = client.models.generate_content(
                 model=MODEL_ID,
                 contents=[prompt, img]
             )
-            text = response.text.strip() if response.text else "[No text detected]"
+            text = response.text.strip() if response.text else ""
             doc.add_paragraph(text)
 
     output = io.BytesIO()
@@ -129,9 +121,6 @@ def process_document(input_path: str, prompt: str, client):
     output.seek(0)
     return output
 
-# --------------------------------------------------
-# FLASK ROUTES
-# --------------------------------------------------
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
@@ -139,28 +128,18 @@ def index():
 @app.route("/upload", methods=["POST"])
 def upload():
     if not API_KEY:
-        return "Server Error: Gemini API key is missing from environment variables.", 500
-
+        return "API Key Missing", 500
     if "file" not in request.files:
-        return "No file uploaded", 400
+        return "No file", 400
 
     file = request.files["file"]
-    if not file.filename:
-        return "No file selected", 400
-
-    temp_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-    file.save(temp_path)
+    path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+    file.save(path)
 
     try:
-        # Initialize the GenAI Client
         client = genai.Client(api_key=API_KEY)
-        
-        # Process and generate the .docx
-        doc_stream = process_document(temp_path, OCR_PROMPT, client)
-
-        # Format output filename
-        base_name = os.path.splitext(file.filename)[0]
-        out_name = f"{base_name}_OCR_Structured.docx"
+        doc_stream = process_document(path, OCR_PROMPT, client)
+        out_name = f"{os.path.splitext(file.filename)[0]}_OCR.docx"
 
         return send_file(
             doc_stream,
@@ -168,17 +147,11 @@ def upload():
             download_name=out_name,
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
-
     except Exception as e:
-        print(f"CRITICAL OCR ERROR: {str(e)}", file=sys.stderr)
-        return f"Processing failed: {str(e)}", 500
-
+        return str(e), 500
     finally:
-        # Clean up uploaded file
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        if os.path.exists(path):
+            os.remove(path)
 
 if __name__ == "__main__":
-    # Ensure tmp directory exists
-    os.makedirs("./tmp/uploads", exist_ok=True)
     app.run(debug=True, port=5000)
