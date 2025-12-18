@@ -137,14 +137,11 @@ def process_document(input_file_path, prompt, client):
 
                 response = client.models.generate_content(
                     model=MODEL_ID,
-                    contents=[
-                        prompt,
-                        processed_image
-                    ],
-                    generation_config={
-                        "temperature": 0.0,   # 🔴 CRITICAL: reduces guessing
-                        "top_p": 0.1
-                    }
+                    contents=[prompt, processed_image],
+                    config=types.GenerationConfig(
+                        temperature=0.0,
+                        top_p=0.1
+                    )
                 )
 
             
