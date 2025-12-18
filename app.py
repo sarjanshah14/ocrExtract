@@ -141,9 +141,11 @@ def process_document(input_file_path, prompt, client):
                     contents=[prompt, processed_image],
                     config=types.GenerationConfig(
                         temperature=0.0,
-                        top_p=0.1
+                        top_p=0.1,
+                        max_output_tokens=8192
                     )
                 )
+
 
             
             extracted_text = response.text
