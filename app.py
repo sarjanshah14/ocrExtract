@@ -32,41 +32,65 @@ MODEL_ID = "gemini-2.5-flash-lite"
 
 # REVISED PROMPT for LOGICAL STRUCTURE and CLEAN READABILITY
 OCR_PROMPT = (
-    "Perform Optical Character Recognition (OCR) on this document. The content is primarily in Hindi, English, Gujarati, or Marathi. "
-    
-    "Your output MUST be structured logically. Consolidate fragmented text into natural paragraphs where appropriate, but ensure each question, instruction, and its options are clearly separated by new lines. "
-    "Use standard double line breaks to separate distinct elements like question headers, question bodies, and individual multiple-choice options (A, B, C, D). "
-    
-    "Do NOT join entire questions or unrelated blocks of text together. "
-    "Prioritize text accuracy and logical separation for readability over replicating the exact visual position of every word. "
-    "Do not include any formatting tags (HTML/Markdown)."
+    "You are a literal Optical Character Recognition (OCR) engine.\n\n"
+
+    "LANGUAGE & SCRIPT HANDLING:\n"
+    "- Detect the language strictly from the script visible in the image.\n"
+    "- Gujarati script MUST be output as Gujarati.\n"
+    "- Devanagari script MUST remain Devanagari (Hindi or Marathi as-is).\n"
+    "- English text must remain English.\n"
+    "- Do NOT translate between languages.\n\n"
+
+    "TEXT EXTRACTION RULES (VERY IMPORTANT):\n"
+    "- Output EXACTLY what is visually read.\n"
+    "- Do NOT guess words.\n"
+    "- Do NOT replace unclear words with similar or common words.\n"
+    "- Do NOT autocorrect spelling.\n"
+    "- Do NOT normalize grammar.\n"
+    "- If a word looks incorrect, still reproduce it exactly.\n"
+    "- If a word is partially unclear, reproduce the visible characters only.\n\n"
+
+    "STRUCTURE & LINE BREAKS:\n"
+    "- Preserve logical reading order (top to bottom, left to right).\n"
+    "- Start each question, instruction, or heading on a new line.\n"
+    "- Insert ONE blank line between unrelated blocks.\n"
+    "- Keep each multiple-choice option on its own line.\n"
+    "- Do NOT merge separate questions or options.\n\n"
+
+    "OUTPUT RESTRICTIONS:\n"
+    "- Output ONLY plain text.\n"
+    "- Do NOT include explanations, notes, or labels.\n"
+    "- Do NOT include HTML or Markdown.\n"
 )
+
 # --- END GEMINI CONFIGURATION ---
 
 def preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
     """
-    Light preprocessing optimized for AI vision models.
-    Improves readability without destroying handwriting.
+    Conservative preprocessing.
+    Avoids over-enhancement which causes Gemini to guess words.
     """
 
-    # Ensure RGB (Gemini prefers RGB)
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    # Resize if too large (prevents model overload)
-    max_width = 1800
+    # Mild resize only (too large = hallucination)
+    max_width = 1600
     if image.width > max_width:
         ratio = max_width / image.width
-        new_size = (max_width, int(image.height * ratio))
-        image = image.resize(new_size, Image.LANCZOS)
+        image = image.resize(
+            (max_width, int(image.height * ratio)),
+            Image.BICUBIC
+        )
 
-    # Increase contrast slightly
-    image = ImageEnhance.Contrast(image).enhance(1.3)
+    # VERY LIGHT contrast (do not overdo)
+    image = ImageEnhance.Contrast(image).enhance(1.15)
 
-    # Increase sharpness slightly
-    image = ImageEnhance.Sharpness(image).enhance(1.2)
+    # Avoid sharpening handwriting too much
+    image = ImageEnhance.Sharpness(image).enhance(1.05)
 
     return image
+
 # --- CORE PROCESSING FUNCTION (Memory Optimized) ---
 def process_document(input_file_path, prompt, client):
     """
@@ -113,7 +137,14 @@ def process_document(input_file_path, prompt, client):
 
                 response = client.models.generate_content(
                     model=MODEL_ID,
-                    contents=[prompt, processed_image]
+                    contents=[
+                        prompt,
+                        processed_image
+                    ],
+                    generation_config={
+                        "temperature": 0.0,   # 🔴 CRITICAL: reduces guessing
+                        "top_p": 0.1
+                    }
                 )
 
             
