@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 from google import genai
 from PIL import Image, ImageEnhance
 from docx import Document
+from docx.shared import Pt
 from docx.enum.section import WD_SECTION
 from flask import Flask, request, render_template, send_file
 
@@ -22,83 +23,75 @@ app.config["UPLOAD_FOLDER"] = "./tmp/uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 # --------------------------------------------------
-# GEMINI CONFIG
+# GEMINI CONFIG & RT-CROS PROMPT
 # --------------------------------------------------
 API_KEY = os.environ.get("GEMINI_API_KEY")
-MODEL_ID = "gemini-2.5-flash-lite"
+# Using 2.0 Flash for best vision/speed balance
+MODEL_ID = "gemini-2.0-flash" 
 
-OCR_PROMPT = (
-    "You are a visual transcription engine.\n\n"
-
-    "TASK:\n"
-    "Transcribe ALL visible text from the ENTIRE image.\n"
-    "Continue until no visible text remains.\n\n"
-
-    "LANGUAGE RULES:\n"
-    "- Preserve original script exactly.\n"
-    "- Gujarati stays Gujarati.\n"
-    "- Devanagari stays Devanagari.\n"
-    "- English stays English.\n"
-    "- Do NOT translate.\n\n"
-
-    "ACCURACY RULES:\n"
-    "- Copy characters exactly as seen.\n"
-    "- Do NOT guess words.\n"
-    "- Do NOT autocorrect spelling.\n"
-    "- Do NOT normalize grammar.\n"
-    "- If unclear, output closest visible glyph.\n\n"
-
-    "LAYOUT RULES:\n"
-    "- Maintain reading order (top to bottom).\n"
-    "- Preserve line breaks.\n"
-    "- Keep paragraphs separate.\n"
-    "- Do NOT merge unrelated text.\n\n"
-
-    "OUTPUT:\n"
-    "- Plain text only.\n"
-    "- No explanations.\n"
-    "- No HTML or Markdown."
-)
+# RT-CROS Structured Prompt
+OCR_PROMPT = """
+{
+  "ROLE": "Expert Linguistic Forensic OCR Engine",
+  "TASK": "Perform a high-fidelity verbatim transcription of the provided image document.",
+  "CONTEXT": "The input is a scanned document containing potentially complex scripts (Gujarati, Devanagari, or English). The goal is to digitize this text for a professional DOCX report without any loss of data or linguistic nuance.",
+  "REASON": "The user requires an exact digital replica of the text for archival and editing purposes. Accuracy is paramount; hallucinations or 'corrections' of the original text will fail the mission.",
+  "OUTPUT_FORMAT": {
+    "TYPE": "Plain Text",
+    "RULES": [
+      "Preserve exact line breaks and paragraph spacing.",
+      "Maintain the original script (do not translate).",
+      "Do not include any commentary, headers, or metadata in the output.",
+      "Capture all punctuation and special characters exactly as they appear."
+    ]
+  },
+  "STOPPING_CONDITION": "Stop immediately once the last visible character at the bottom-right of the image has been transcribed. Do not add conversational filler."
+}
+"""
 
 # --------------------------------------------------
-# IMAGE PREPROCESSING (VERY SAFE)
+# IMAGE PREPROCESSING
 # --------------------------------------------------
 def preprocess_image(image: Image.Image) -> Image.Image:
+    """Enhances image for better OCR legibility."""
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    # Keep resolution LOW to avoid hallucination + OOM
-    max_width = 1400
-    if image.width > max_width:
-        ratio = max_width / image.width
-        image = image.resize(
-            (max_width, int(image.height * ratio)),
-            Image.BICUBIC
-        )
+    # Limit size to prevent OOM but keep high enough for small text
+    max_dim = 1800
+    if max(image.width, image.height) > max_dim:
+        image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
-    # Extremely light enhancement
-    image = ImageEnhance.Contrast(image).enhance(1.1)
-    image = ImageEnhance.Sharpness(image).enhance(1.02)
+    # Moderate Contrast & Sharpness for better glyph recognition
+    image = ImageEnhance.Contrast(image).enhance(1.2)
+    image = ImageEnhance.Sharpness(image).enhance(1.5)
 
     return image
 
 # --------------------------------------------------
-# CORE OCR (OOM SAFE)
+# CORE OCR LOGIC
 # --------------------------------------------------
 def process_document(input_path: str, prompt: str, client):
-    document = Document()
+    doc = Document()
+    
+    # Set default style for the Word Document
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Arial'
+    font.size = Pt(11)
 
     if input_path.lower().endswith(".pdf"):
         pdf = fitz.open(input_path)
-
         try:
-            matrix = fitz.Matrix(110 / 72, 110 / 72)  # LOW DPI
+            # 144 DPI is a sweet spot for quality vs memory
+            matrix = fitz.Matrix(144 / 72, 144 / 72) 
 
             for page_index in range(len(pdf)):
                 page = pdf.load_page(page_index)
-
                 pix = page.get_pixmap(matrix=matrix)
-                img = Image.open(io.BytesIO(pix.tobytes("png")))
+                
+                img_data = io.BytesIO(pix.tobytes("png"))
+                img = Image.open(img_data)
                 img = preprocess_image(img)
 
                 response = client.models.generate_content(
@@ -106,40 +99,38 @@ def process_document(input_path: str, prompt: str, client):
                     contents=[prompt, img]
                 )
 
-                text = response.text or "[NO TEXT RETURNED]"
+                text = response.text.strip() if response.text else "[Page empty or unreadable]"
 
-                document.add_paragraph(f"\n--- Page {page_index + 1} ---")
-                document.add_paragraph(text)
+                # Add content to Word
+                if page_index > 0:
+                    doc.add_section(WD_SECTION.NEW_PAGE)
+                
+                p = doc.add_paragraph()
+                p.add_run(f"--- PAGE {page_index + 1} ---").bold = True
+                doc.add_paragraph(text)
 
-                if page_index < len(pdf) - 1:
-                    document.add_section(WD_SECTION.NEW_PAGE)
-
-                # 🔥 FREE MEMORY
                 del img
                 del pix
-
         finally:
             pdf.close()
-
     else:
+        # Process Single Image
         with Image.open(input_path) as img:
             img = preprocess_image(img)
-
             response = client.models.generate_content(
                 model=MODEL_ID,
                 contents=[prompt, img]
             )
-
-            text = response.text or "[NO TEXT RETURNED]"
-            document.add_paragraph(text)
+            text = response.text.strip() if response.text else "[No text detected]"
+            doc.add_paragraph(text)
 
     output = io.BytesIO()
-    document.save(output)
+    doc.save(output)
     output.seek(0)
     return output
 
 # --------------------------------------------------
-# ROUTES
+# FLASK ROUTES
 # --------------------------------------------------
 @app.route("/", methods=["GET"])
 def index():
@@ -148,23 +139,29 @@ def index():
 @app.route("/upload", methods=["POST"])
 def upload():
     if not API_KEY:
-        return "GEMINI_API_KEY not set", 500
+        return "Server Error: Gemini API key is missing from environment variables.", 500
 
     if "file" not in request.files:
         return "No file uploaded", 400
 
     file = request.files["file"]
     if not file.filename:
-        return "Empty filename", 400
+        return "No file selected", 400
 
-    path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-    file.save(path)
+    temp_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+    file.save(temp_path)
 
     try:
+        # Initialize the GenAI Client
         client = genai.Client(api_key=API_KEY)
-        doc_stream = process_document(path, OCR_PROMPT, client)
+        
+        # Process and generate the .docx
+        doc_stream = process_document(temp_path, OCR_PROMPT, client)
 
-        out_name = file.filename.rsplit(".", 1)[0] + "_OCR.docx"
+        # Format output filename
+        base_name = os.path.splitext(file.filename)[0]
+        out_name = f"{base_name}_OCR_Structured.docx"
+
         return send_file(
             doc_stream,
             as_attachment=True,
@@ -173,12 +170,15 @@ def upload():
         )
 
     except Exception as e:
-        print("OCR ERROR:", e, file=sys.stderr)
-        return "OCR failed. Check server logs.", 500
+        print(f"CRITICAL OCR ERROR: {str(e)}", file=sys.stderr)
+        return f"Processing failed: {str(e)}", 500
 
     finally:
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+        # Clean up uploaded file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+if __name__ == "__main__":
+    # Ensure tmp directory exists
+    os.makedirs("./tmp/uploads", exist_ok=True)
+    app.run(debug=True, port=5000)
