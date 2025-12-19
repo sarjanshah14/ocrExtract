@@ -22,7 +22,7 @@ app.config["UPLOAD_FOLDER"] = "./tmp/uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
-MODEL_ID = "gemini-2.0-flash" 
+MODEL_ID = "gemini-2.0-flash-lite" 
 
 # --------------------------------------------------
 # MULTILINGUAL "HUMAN SCRIBE" PROMPT
