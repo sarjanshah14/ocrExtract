@@ -6,303 +6,220 @@
   <title>NAVNEET TEXT EXTRACTION TOOL</title>
   <style>
     :root{
-      --navy: #0b2545;
-      --soft-bg: #f3f7fb;
-      --card-bg: #ffffff;
-      --muted-gray: #8b9bb5;
-      --accent: #ff7a3d;
-      --accent-weak: rgba(255,122,61,0.12);
-      --dashed-blue: #9ec5ff;
-      --success-green: #388e3c; /* New variable for success color */
-      --radius: 14px;
-      --shadow: 0 8px 24px rgba(11,37,69,0.08);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --navy: #0b2545; --soft-bg: #f3f7fb; --card-bg: #ffffff;
+      --muted-gray: #8b9bb5; --accent: #ff7a3d; --accent-weak: rgba(255,122,61,0.12);
+      --dashed-blue: #9ec5ff; --success-green: #388e3c;
+      --radius: 14px; --shadow: 0 8px 24px rgba(11,37,69,0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
     }
-    /* FIX: Ensures the navbar is full width and layout is non-scrolling */
     html,body{height:100%;margin:0;background:var(--soft-bg);padding:0;} 
 
-    /* Header / Navbar */
     header{
-      width:100%;background:var(--navy);color:white;padding:22px 16px;box-sizing:border-box;text-align:center;position:fixed;top:0;left:0;z-index:10;
-      box-shadow: 0 2px 6px rgba(2,12,34,0.08);
+      width:100%;background:var(--navy);color:white;padding:22px 16px;box-sizing:border-box;
+      text-align:center;position:fixed;top:0;left:0;z-index:10;box-shadow: 0 2px 6px rgba(2,12,34,0.08);
     }
     header h1{margin:0;font-weight:800;letter-spacing:2px;font-size:14px;text-transform:uppercase;}
 
-    /* Center container */
-    .page-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:120px 20px 40px;box-sizing:border-box;}
+    .page-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:120px 20px 40px;box-sizing:border-box;}
 
-    /* Card */
     .card{width:100%;max-width:550px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:42px 40px;box-sizing:border-box;text-align:center}
-    .card h2{margin:0 0 18px;font-size:20px;color:#102a4a;font-weight:700}
+    .card h2{margin:0 0 10px;font-size:20px;color:#102a4a;font-weight:700}
     .subtitle{font-size:13px;color:var(--muted-gray);margin-bottom:26px}
 
-    /* Dropzone */
+    /* Selection Box */
+    .mode-container {
+        text-align: left; background: #f9fbff; border: 1px solid #e1e8f0;
+        padding: 15px; border-radius: 10px; margin-bottom: 25px;
+    }
+    .mode-container label { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; }
+    select { 
+        width: 100%; margin-top: 8px; padding: 10px; border-radius: 6px; 
+        border: 1px solid var(--dashed-blue); background: white; font-size: 14px; outline: none;
+    }
+
     .dropzone{
-      border-radius:10px;padding:34px 26px;border:2px dashed var(--dashed-blue);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;cursor:pointer;transition:all .18s ease-in-out;background:linear-gradient(180deg, rgba(158,197,255,0.04) 0%, rgba(255,255,255,0) 100%);
+      border-radius:10px;padding:34px 26px;border:2px dashed var(--dashed-blue);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:180px;cursor:pointer;transition:all .18s ease-in-out;
+      background:linear-gradient(180deg, rgba(158,197,255,0.04) 0%, rgba(255,255,255,0) 100%);
     }
-    .dropzone.dragover{border-color:var(--accent);box-shadow:0 8px 30px rgba(15,80,150,0.06);transform:translateY(-2px)}
-    
-    /* NEW: Style for when a file is successfully selected (Feature 3) */
-    .dropzone.file-selected {
-      border-color: var(--success-green); 
-      box-shadow: 0 4px 10px rgba(56, 142, 60, 0.15); 
-      background: rgba(56, 142, 60, 0.04); 
-    }
+    .dropzone.dragover{border-color:var(--accent); transform:translateY(-2px)}
+    .dropzone.file-selected { border-color: var(--success-green); background: rgba(56, 142, 60, 0.04); }
 
-    .drop-icon{width:64px;height:64px;margin-bottom:12px;opacity:0.96}
+    .drop-icon{width:48px;height:48px;margin-bottom:12px;opacity:0.8}
     .drop-text{font-size:15px;color:#16324a;font-weight:600}
-    .drop-muted{font-size:13px;color:var(--muted-gray);margin-top:6px}
 
-    /* Hidden default input */
     input[type=file]{display:none}
+    .file-info{margin-top:14px;font-size:13px;color:var(--muted-gray);min-height: 36px;} 
 
-    /* Filename area (Feature 2) */
-    .file-info{margin-top:14px;font-size:13px;color:var(--muted-gray);min-height: 36px; line-height: 1.4;} 
-
-    /* CTA (Convert Button) */
     .btn{
-      display:inline-block;margin-top:28px;padding:14px 28px;border-radius:999px;background:var(--accent);color:white;font-weight:700;border:none;cursor:pointer;font-size:15px;box-shadow:0 8px 20px rgba(255,122,61,0.12);transition:transform .12s ease,opacity .12s ease;text-decoration: none;
+      display:inline-block;margin-top:20px;padding:14px 28px;border-radius:999px;
+      background:var(--accent);color:white;font-weight:700;border:none;cursor:pointer;
+      font-size:15px;width: 100%; transition: 0.2s;
     }
-    .btn:active{transform:translateY(1px)}
-    .btn.disabled{opacity:0.6;cursor:not-allowed;box-shadow:none}
+    .btn:disabled{opacity:0.4;cursor:not-allowed;}
+    .btn:hover:not(:disabled) { background: #e66a33; }
 
-    /* Processing/Error States */
-    .status-panel { display: none; text-align: center; }
-    .status-icon { font-size: 3em; margin-bottom: 15px; }
+    /* Results UI */
+    #resultArea { display: none; width: 100%; max-width: 800px; margin-top: 20px; }
+    .table-card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: var(--navy); font-size: 13px; }
+    td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .qty-highlight { background: #fff7ed; color: #9a3412; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid #ffedd5; }
+
     .spinner {
-      border: 6px solid #e0e0e0; border-top: 6px solid var(--navy); border-radius: 50%;
-      width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 25px auto;
+      border: 4px solid #f3f3f3; border-top: 4px solid var(--navy); border-radius: 50%;
+      width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 25px auto; display: none;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .error-text { color: #d9534f; font-weight: 600; margin-top: 15px; }
-    .success-text { color: #388e3c; font-weight: 600; margin-top: 15px; }
-    
-    /* Specific Button Styles for Success/Download Panel */
-    .download-btn { /* Use the existing accent color for the primary action */
-      margin-right: 15px;
-      margin-top: 28px;
-    }
-    .new-extraction-btn { /* Make the 'Start New' button green/success color */
-      margin-top: 28px;
-      padding: 14px 28px;
-      border-radius: 999px;
-      background: #388e3c; /* Green color */
-      color: white;
-      font-weight: 700;
-      border: none;
-      cursor: pointer;
-      font-size: 15px;
-      box-shadow: 0 8px 20px rgba(56, 142, 60, 0.12);
-      transition: transform .12s ease,opacity .12s ease;
-    }
-    .new-extraction-btn:hover { background: #2e7d32; }
 
-    /* Small note */
-    .note{margin-top:10px;font-size:12px;color:var(--muted-gray)}
-
-    /* Non-scroll layout ensure */
-    @media (max-height:620px){
-      .page-wrap{align-items:flex-start;padding-top:100px;padding-bottom:40px}
-    }
+    #processingMessage { display: none; color: var(--navy); font-weight: 600; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>NAVNEET TEXT EXTRACTION TOOL</h1>
-  </header>
+  <header><h1>NAVNEET TEXT EXTRACTION TOOL</h1></header>
 
   <main class="page-wrap">
-    <div class="card" role="main">
-      
-      <div id="uploadPanel" class="status-panel">
-        <h2>Attach File to Convert</h2>
-        <div class="subtitle">Upload a scanned image or PDF. We will convert it into a DOCX document.</div>
+    <div class="card" id="uploadCard">
+      <h2>Process Document</h2>
+      <div class="subtitle">Extract data from Navneet Indent Forms</div>
 
-        <input id="fileInput" type="file" accept="image/jpeg,image/png,application/pdf" />
+      <div class="mode-container">
+          <label>Extraction Mode</label>
+          <select id="modeSelect">
+              <option value="extract">Code & Quantity Extraction (View Tables)</option>
+              <option value="transcribe">Full Script Transcription (Download Word)</option>
+          </select>
+      </div>
 
-        <label id="dropzone" class="dropzone" for="fileInput" tabindex="0" aria-label="Drag and drop file here or click to browse">
-          <svg class="drop-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-            <path d="M16.5 10.5L12 6l-4.5 4.5" stroke="#0b2545" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-            <rect x="3" y="10.5" width="18" height="9" rx="2" stroke="#0b2545" stroke-width="1.2" fill="var(--accent-weak)"/>
-          </svg>
-          <div class="drop-text">Drag &amp; Drop a file here or <strong>Click to Browse</strong></div>
-          <div class="drop-muted">Supported: JPG, PNG, PDF (Max file size: 20 MB)</div>
-        </label>
+      <input id="fileInput" type="file" accept="image/*,application/pdf" />
+      <label id="dropzone" class="dropzone" for="fileInput">
+        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+        <div class="drop-text" id="dropLabel">Click to Browse or Drag File</div>
+        <div class="file-info" id="fileInfo"></div>
+      </label>
 
-        <div id="fileInfo" class="file-info" aria-live="polite"></div>
+      <div class="spinner" id="loader"></div>
+      <div id="processingMessage">Analyzing document pages...</div>
+      
+      <button id="submitBtn" class="btn" disabled>Start Extraction</button>
+    </div>
 
-        <button id="convertBtn" class="btn disabled" disabled>Convert to DOCX</button>
-        <div class="note">Output will be returned as a downloadable .docx file</div>
-      </div>
-      
-      <div id="processingPanel" class="status-panel">
-          <div class="spinner"></div>
-          <h2>Processing Document...</h2>
-          <div class="subtitle">Extracting text. Please wait.</div>
-      </div>
-      
-      <div id="downloadPanel" class="status-panel">
-          <div class="status-icon">🎉</div>
-          <h2>Conversion Complete!</h2>
-          <div class="success-text">Your document is ready.</div>
-          
-          <a id="downloadLink" href="#" class="btn download-btn">Download .docx File</a>
-          
-          <button onclick="window.location.reload()" class="btn new-extraction-btn">Start New Extraction</button>
-      </div>
-      
-      <div id="errorPanel" class="status-panel">
-          <div class="status-icon" style="color:#d9534f;">❌</div>
-          <h2>Conversion Failed!</h2>
-          <div id="errorMessage" class="error-text"></div>
-          <button onclick="window.location.reload()" class="btn new-extraction-btn">Try Again</button>
-      </div>
-      
+    <div id="resultArea">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0; color:var(--navy);">Extracted Data</h2>
+            <button onclick="window.location.reload()" class="btn" style="margin:0; width:auto; padding:8px 20px;">New Scan</button>
+        </div>
+        <div id="tableContainer"></div>
     </div>
   </main>
 
   <script>
-    (function(){
-      // Constants
-      const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB (Feature 1)
-      const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf']; // (Feature 1)
+    const fileInput = document.getElementById('fileInput');
+    const dropzone = document.getElementById('dropzone');
+    const fileInfo = document.getElementById('fileInfo');
+    const submitBtn = document.getElementById('submitBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    const loader = document.getElementById('loader');
+    const uploadCard = document.getElementById('uploadCard');
+    const resultArea = document.getElementById('resultArea');
 
-      // Elements
-      const fileInput = document.getElementById('fileInput');
-      const dropzone = document.getElementById('dropzone');
-      const fileInfo = document.getElementById('fileInfo');
-      const convertBtn = document.getElementById('convertBtn');
-      const downloadLink = document.getElementById('downloadLink');
-      const errorMessageDisplay = document.getElementById('errorMessage');
-      
-      // Panels
-      const uploadPanel = document.getElementById('uploadPanel');
-      const processingPanel = document.getElementById('processingPanel');
-      const downloadPanel = document.getElementById('downloadPanel');
-      const errorPanel = document.getElementById('errorPanel');
-      
-      let chosenFile = null;
-
-      // --- UI Management ---
-      function showPanel(panel){
-        uploadPanel.style.display = 'none';
-        processingPanel.style.display = 'none';
-        downloadPanel.style.display = 'none';
-        errorPanel.style.display = 'none';
-        panel.style.display = 'block';
-      }
-
-      // Function to handle file selection and validation (Features 1, 2, 3)
-      function setFile(f){
-        chosenFile = f;
-        fileInfo.innerHTML = ''; // Reset
-        convertBtn.classList.add('disabled');
-        convertBtn.disabled = true;
-        dropzone.classList.remove('file-selected'); // Remove selected state (Feature 3)
-
-        if(!f) { return; }
-
-        const fileSizeMB = (f.size / (1024 * 1024)).toFixed(2);
-
-        // 1. Client-Side Validation
-        if (f.size > MAX_FILE_SIZE_BYTES) {
-            fileInfo.innerHTML = `<span class="error-text">Error:</span> File is too large (${fileSizeMB} MB). Max allowed size is ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB.`;
-            chosenFile = null; 
-            return;
+    // Drag and Drop Logic
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if(e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect();
         }
-        if (!ALLOWED_MIME_TYPES.includes(f.type)) {
-            fileInfo.innerHTML = `<span class="error-text">Error:</span> Unsupported file type. Please use JPG, PNG, or PDF.`;
-            chosenFile = null; 
-            return;
+    });
+
+    fileInput.onchange = handleFileSelect;
+
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if(file) {
+            fileInfo.innerHTML = `<strong>Selected:</strong> ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
+            dropzone.classList.add('file-selected');
+            document.getElementById('dropLabel').style.display = 'none';
+            submitBtn.disabled = false;
         }
+    }
 
+    submitBtn.onclick = async () => {
+        const mode = modeSelect.value;
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('mode', mode);
 
-        // 2. Successful File Info & Preview
-        const originalFilename = f.name;
-        // Match the naming convention from the Python backend (Feature 4)
-        const outputFilename = originalFilename.split('.').slice(0, -1).join('.') + '_OCR_Structured.docx'; 
-        
-        fileInfo.innerHTML = `
-            Selected: <span style="font-weight:600;">${originalFilename}</span> (${fileSizeMB} MB)<br>
-            Output Name: <span style="font-weight:600; color: var(--navy);">${outputFilename}</span>
-        `;
-        
-        convertBtn.classList.remove('disabled');
-        convertBtn.disabled = false;
-        dropzone.classList.add('file-selected'); // Add selected state (Feature 3)
-      }
+        // UI State: Loading
+        submitBtn.style.display = 'none';
+        loader.style.display = 'block';
+        document.getElementById('processingMessage').style.display = 'block';
 
-      // --- Event Handlers (Drag & Drop, File Selection) ---
-      dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
-      dropzone.addEventListener('dragleave', ()=>{ dropzone.classList.remove('dragover'); });
-      dropzone.addEventListener('drop', (e)=>{
-        e.preventDefault(); dropzone.classList.remove('dragover');
-        const f = e.dataTransfer.files && e.dataTransfer.files[0];
-        if(f) { fileInput.files = e.dataTransfer.files; setFile(f); }
-      });
-      fileInput.addEventListener('change', (e)=>{
-        const f = e.target.files && e.target.files[0];
-        setFile(f || null);
-      });
-
-      // --- Convert button: AJAX POST to Flask route /upload ---
-      convertBtn.addEventListener('click', async ()=>{
-        if(!chosenFile) return;
-        
-        showPanel(processingPanel);
-        
-        // Construct the name to use for the download attribute (Feature 4)
-        const originalFilename = chosenFile.name.split('.').slice(0, -1).join('.');
-        const outputFilename = `${originalFilename}_OCR_Structured.docx`; 
-
-        try{
-          const fd = new FormData(); fd.append('file', chosenFile);
-          
-          const res = await fetch('/upload', { method: 'POST', body: fd });
-          
-          if(!res.ok) {
-            const errorText = await res.text();
-            throw new Error(errorText || `Conversion failed with status: ${res.status}`);
-          }
-
-          const blob = await res.blob();
-          const fileUrl = window.URL.createObjectURL(blob);
-          
-          // Set download link properties to trigger download
-          downloadLink.href = fileUrl;
-          downloadLink.download = outputFilename; // Sets the desired filename
-          
-          showPanel(downloadPanel);
-          
-          // Clean up the temporary object URL after a short delay
-          setTimeout(() => window.URL.revokeObjectURL(fileUrl), 60000); 
-
-        }catch(err){
-          console.error("Conversion Error:", err); 
-          // Check for the known Flask error and simplify the message
-          let displayMessage = err.message;
-          
-          // Display only the user-friendly part of the message if possible
-          if (displayMessage.includes("Conversion failed with status: 400")) {
-            displayMessage = displayMessage.replace("Conversion failed with status: 400", "Server returned an error:");
-          } else if (displayMessage.includes("Failed to fetch")) {
-            displayMessage = "Network error. Could not connect to the server.";
-          } else if (displayMessage.includes("Server Error: Gemini API key is missing")) {
-                displayMessage = "Configuration Error: The server's API key is not set."
+        try {
+            const res = await fetch('/upload', { method: 'POST', body: formData });
+            
+            if (mode === 'transcribe') {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name.split('.')[0] + "_Transcription.docx";
+                document.body.appendChild(a);
+                a.click();
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                renderTables(data);
             }
-          
-          errorMessageDisplay.textContent = displayMessage || 'An unexpected error occurred during processing.';
-          showPanel(errorPanel);
-        }finally{
-          // Reset file input state for potential new extraction
-          fileInput.value = ''; 
-          setFile(null); 
+        } catch (err) {
+            alert("Extraction failed. Please check the API Key or file format.");
+            console.error(err);
+            window.location.reload();
         }
-      });
+    };
 
-      // Initial state
-      showPanel(uploadPanel);
-    })();
+    function renderTables(data) {
+        uploadCard.style.display = 'none';
+        resultArea.style.display = 'block';
+        const container = document.getElementById('tableContainer');
+        container.innerHTML = '';
+
+        if(!data || data.length === 0) {
+            container.innerHTML = '<div class="table-card">No handwritten quantities detected.</div>';
+            return;
+        }
+
+        data.forEach(section => {
+            let html = `
+                <div class="table-card">
+                    <h3 style="margin-top:0; color:var(--accent); font-size:18px;">${section.table_title}</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Code</th><th>Subject Name</th><th style="text-align:center;">Qty</th></tr>
+                        </thead>
+                        <tbody>
+            `;
+            section.items.forEach(item => {
+                html += `
+                    <tr>
+                        <td style="font-family:monospace; font-weight:600;">${item.code}</td>
+                        <td>${item.subject}</td>
+                        <td style="text-align:center;"><span class="qty-highlight">${item.qty}</span></td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table></div>`;
+            container.innerHTML += html;
+        });
+    }
   </script>
 </body>
 </html>
