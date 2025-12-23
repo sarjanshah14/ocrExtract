@@ -44,25 +44,29 @@ TRANSCRIPTION_PROMPT = """
 
 STRUCTURED_EXTRACT_PROMPT = """
 {
-  "TASK": "Extract ALL data from this TWO-COLUMN Navneet Indent Form.",
+  "TASK": "Extract ALL data from this TWO-COLUMN Navneet Form while preserving spatial orientation.",
   "FORMAT": "JSON list of objects.",
   "COGNITIVE_STRATEGY": [
-    "Identify the form as a TWO-COLUMN layout. Scan the LEFT column first, then the RIGHT column.",
-    "SCAN every row for section headers (e.g., 'ધોરણ 6', 'ધોરણ 8', 'For Office Use Only').",
-    "For EVERY Code/Subject row: if a quantity is handwritten, extract it. If the quantity cell is empty or has no handwriting, log it as '0'."
+    "Identify the vertical center-line of the document.",
+    "Categorize sections (e.g., ધોરણ 6) based on their physical side: 'left_col' or 'right_col'.",
+    "Scan top-to-bottom for the LEFT side first, then top-to-bottom for the RIGHT side.",
+    "For EVERY row: if quantity is blank, log as '0'."
   ],
   "OUTPUT_STRUCTURE": [
     {
-      "table_title": "Section Heading (e.g., ધોરણ 8)",
-      "items": [
-        {"code": "M 4091", "subject": "ગુજરાતી (FL)", "qty": "35"},
-        {"code": "M 4092", "subject": "હિન્દી (SL)", "qty": "0"}
-      ]
+      "column_position": "left_col", 
+      "table_title": "ધોરણ 9",
+      "items": [{"code": "N 4101", "subject": "ગુજરાતી [FL]", "qty": "50"}]
+    },
+    {
+      "column_position": "right_col",
+      "table_title": "ધોરણ 10",
+      "items": [{"code": "N 4121", "subject": "ગુજરાતી [FL]", "qty": "80"}]
     }
   ],
   "STRICT_RULES": [
-    "Do not miss the right-hand side of the page.",
-    "Log missing quantities as '0'—do not skip the row.",
+    "Do not merge columns.",
+    "Every section must have a 'column_position' attribute: either 'left_col' or 'right_col'.",
     "Return ONLY raw JSON."
   ]
 }

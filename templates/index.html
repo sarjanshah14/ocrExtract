@@ -5,221 +5,318 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>NAVNEET TEXT EXTRACTION TOOL</title>
   <style>
-    :root{
-      --navy: #0b2545; --soft-bg: #f3f7fb; --card-bg: #ffffff;
-      --muted-gray: #8b9bb5; --accent: #ff7a3d; --accent-weak: rgba(255,122,61,0.12);
-      --dashed-blue: #9ec5ff; --success-green: #388e3c;
-      --radius: 14px; --shadow: 0 8px 24px rgba(11,37,69,0.08);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    :root {
+      --navy: #0b2545;
+      --soft-bg: #f3f7fb;
+      --card-bg: #ffffff;
+      --muted-gray: #8b9bb5;
+      --accent: #ff7a3d;
+      --dashed-blue: #9ec5ff;
+      --success-green: #388e3c;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(11,37,69,0.08);
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
     }
-    html,body{height:100%;margin:0;background:var(--soft-bg);padding:0;} 
 
-    header{
-      width:100%;background:var(--navy);color:white;padding:22px 16px;box-sizing:border-box;
-      text-align:center;position:fixed;top:0;left:0;z-index:10;box-shadow: 0 2px 6px rgba(2,12,34,0.08);
+    html, body { height: 100%; margin: 0; background: var(--soft-bg); color: var(--navy); }
+
+    header {
+      width: 100%; background: var(--navy); color: white; padding: 22px 16px;
+      box-sizing: border-box; text-align: center; position: fixed; top: 0; left: 0;
+      z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    header h1{margin:0;font-weight:800;letter-spacing:2px;font-size:14px;text-transform:uppercase;}
+    header h1 { margin: 0; font-weight: 800; letter-spacing: 2px; font-size: 14px; text-transform: uppercase; }
 
-    .page-wrap{display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:120px 20px 40px;box-sizing:border-box;}
+    .page-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 120px 20px 60px; box-sizing: border-box;
+    }
 
-    .card{width:100%;max-width:550px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:42px 40px;box-sizing:border-box;text-align:center}
-    .card h2{margin:0 0 10px;font-size:20px;color:#102a4a;font-weight:700}
-    .subtitle{font-size:13px;color:var(--muted-gray);margin-bottom:26px}
+    /* --- UPLOAD CARD --- */
+    .upload-card {
+      width: 100%; max-width: 550px; background: var(--card-bg);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 40px; text-align: center; transition: transform 0.3s ease;
+    }
+    .upload-card h2 { margin: 0 0 10px; font-size: 22px; font-weight: 700; }
+    .subtitle { font-size: 14px; color: var(--muted-gray); margin-bottom: 30px; }
 
     .mode-container {
-        text-align: left; background: #f9fbff; border: 1px solid #e1e8f0;
-        padding: 15px; border-radius: 10px; margin-bottom: 25px;
+      text-align: left; background: #f9fbff; border: 1px solid #e1e8f0;
+      padding: 20px; border-radius: 12px; margin-bottom: 25px;
     }
-    .mode-container label { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; }
-    select { 
-        width: 100%; margin-top: 8px; padding: 10px; border-radius: 6px; 
-        border: 1px solid var(--dashed-blue); background: white; font-size: 14px; outline: none;
+    .mode-container label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted-gray); }
+    select {
+      width: 100%; margin-top: 10px; padding: 12px; border-radius: 8px;
+      border: 1px solid var(--dashed-blue); background: white; font-size: 15px; outline: none;
     }
 
-    .dropzone{
-      border-radius:10px;padding:34px 26px;border:2px dashed var(--dashed-blue);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      min-height:180px;cursor:pointer;transition:all .18s ease-in-out;
-      background:linear-gradient(180deg, rgba(158,197,255,0.04) 0%, rgba(255,255,255,0) 100%);
+    .dropzone {
+      border-radius: 12px; padding: 40px 20px; border: 2px dashed var(--dashed-blue);
+      display: flex; flex-direction: column; align-items: center; cursor: pointer;
+      background: linear-gradient(180deg, rgba(158,197,255,0.05) 0%, #fff 100%);
+      transition: all 0.2s ease;
     }
-    .dropzone.dragover{border-color:var(--accent); transform:translateY(-2px)}
-    .dropzone.file-selected { border-color: var(--success-green); background: rgba(56, 142, 60, 0.04); }
+    .dropzone:hover { border-color: var(--accent); background: rgba(255,122,61,0.02); }
+    .dropzone.dragover { border-color: var(--accent); background: var(--accent-weak); transform: scale(1.02); }
+    .dropzone.file-selected { border-color: var(--success-green); background: #f0fdf4; }
 
-    .drop-icon{width:48px;height:48px;margin-bottom:12px;opacity:0.8}
-    .drop-text{font-size:15px;color:#16324a;font-weight:600}
+    .drop-icon { width: 50px; height: 50px; margin-bottom: 15px; color: var(--dashed-blue); }
+    .drop-text { font-size: 16px; font-weight: 600; }
+    #fileInfo { margin-top: 10px; font-size: 13px; color: var(--success-green); font-weight: 600; }
 
-    input[type=file]{display:none}
-    .file-info{margin-top:14px;font-size:13px;color:var(--muted-gray);min-height: 36px;} 
+    input[type=file] { display: none; }
 
-    .btn{
-      display:inline-block;margin-top:20px;padding:14px 28px;border-radius:999px;
-      background:var(--accent);color:white;font-weight:700;border:none;cursor:pointer;
-      font-size:15px;width: 100%; transition: 0.2s;
+    .btn {
+      display: block; width: 100%; margin-top: 25px; padding: 16px;
+      border-radius: 50px; background: var(--accent); color: white;
+      font-weight: 700; border: none; cursor: pointer; font-size: 16px;
+      box-shadow: 0 4px 12px rgba(255,122,61,0.3); transition: all 0.2s;
     }
-    .btn:disabled{opacity:0.4;cursor:not-allowed;}
+    .btn:hover { background: #e66a33; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
-    /* GRID RESULTS UI */
-    #resultArea { display: none; width: 100%; max-width: 1200px; margin-top: 20px; }
+    /* --- RESULTS DASHBOARD --- */
+    #resultArea { display: none; width: 100%; max-width: 1300px; }
     
-    #tableContainer { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); 
-      gap: 20px; 
+    .dashboard-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;
+    }
+
+    .dual-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* Two Equal Columns */
+      gap: 30px;
       align-items: start;
     }
 
-    @media (max-width: 600px) {
-      #tableContainer { grid-template-columns: 1fr; }
+    @media (max-width: 1000px) {
+      .dual-layout { grid-template-columns: 1fr; }
     }
 
-    .table-card { background: white; border-radius: 12px; padding: 20px; box-shadow: var(--shadow); height: fit-content; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-    th { text-align: left; padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: var(--navy); font-size: 12px; }
-    td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .column-lane { display: flex; flex-direction: column; gap: 20px; }
+    .lane-label { 
+      font-size: 12px; font-weight: 800; color: var(--muted-gray); 
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .lane-label::after { content: ""; height: 1px; background: #e2e8f0; flex-grow: 1; }
+
+    .table-card {
+      background: white; border-radius: 12px; padding: 25px;
+      box-shadow: var(--shadow); border-top: 4px solid var(--navy);
+    }
+    .table-card h3 { margin: 0 0 15px 0; font-size: 18px; color: var(--accent); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { 
+      text-align: left; padding: 12px 8px; background: #f8fafc; 
+      font-size: 12px; font-weight: 700; border-bottom: 2px solid #edf2f7; 
+    }
+    td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
     
-    .qty-highlight { 
-      background: #fff7ed; color: #9a3412; font-weight: 700; padding: 4px 8px; 
-      border-radius: 6px; border: 1px solid #ffedd5; display: inline-block; min-width: 25px; text-align: center;
+    .qty-cell { text-align: center; width: 60px; }
+    .qty-badge {
+      display: inline-block; min-width: 32px; padding: 4px 8px;
+      border-radius: 6px; font-weight: 800; font-size: 13px;
+      background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5;
     }
-    .qty-zero { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .qty-zero { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
 
+    /* --- LOADING STATE --- */
+    .loading-overlay { display: none; margin: 20px 0; }
     .spinner {
-      border: 4px solid #f3f3f3; border-top: 4px solid var(--navy); border-radius: 50%;
-      width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 25px auto; display: none;
+      width: 40px; height: 40px; border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--accent); border-radius: 50%;
+      animation: spin 1s linear infinite; margin: 0 auto 15px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    #processingMessage { display: none; color: var(--navy); font-weight: 600; margin-bottom: 10px; font-size: 14px; }
+    #statusText { font-weight: 600; font-size: 14px; color: var(--navy); }
+
   </style>
 </head>
 <body>
+
   <header><h1>NAVNEET TEXT EXTRACTION TOOL</h1></header>
 
   <main class="page-wrap">
-    <div class="card" id="uploadCard">
+    <div class="upload-card" id="uploadCard">
       <h2>Process Document</h2>
-      <div class="subtitle">Log quantities or transcribe text</div>
+      <p class="subtitle">Preserves two-column layout and logs empty quantities as 0.</p>
 
       <div class="mode-container">
-          <label>Extraction Mode</label>
-          <select id="modeSelect">
-              <option value="extract">Code & Quantity Extraction (View Tables)</option>
-              <option value="transcribe">Full Script Transcription (Download Word)</option>
-          </select>
+        <label>Extraction Mode</label>
+        <select id="modeSelect">
+          <option value="extract">Code & Qty Extraction (Side-by-Side)</option>
+          <option value="transcribe">Full Handwriting Transcription (.docx)</option>
+        </select>
       </div>
 
-      <input id="fileInput" type="file" accept="image/*,application/pdf" />
-      <label id="dropzone" class="dropzone" for="fileInput">
-        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      <input type="file" id="fileInput" accept="image/*,application/pdf" />
+      <label for="fileInput" class="dropzone" id="dropzone">
+        <svg class="drop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
         </svg>
-        <div class="drop-text" id="dropLabel">Click to Browse or Drag File</div>
-        <div class="file-info" id="fileInfo"></div>
+        <div class="drop-text" id="dropLabel">Drag & Drop or Click to Browse</div>
+        <div id="fileInfo"></div>
       </label>
 
-      <div class="spinner" id="loader"></div>
-      <div id="processingMessage">Analyzing document...</div>
-      
+      <div class="loading-overlay" id="loader">
+        <div class="spinner"></div>
+        <div id="statusText">Analyzing layout & handwriting...</div>
+      </div>
+
       <button id="submitBtn" class="btn" disabled>Start Extraction</button>
     </div>
 
     <div id="resultArea">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="margin:0; color:var(--navy);">Extraction Summary</h2>
-            <button onclick="window.location.reload()" class="btn" style="margin:0; width:auto; padding:10px 25px;">New Scan</button>
+      <div class="dashboard-header">
+        <h2 style="margin:0;">Extracted Data Dashboard</h2>
+        <button class="btn" style="margin:0; width:auto; padding:10px 25px;" onclick="window.location.reload()">New Upload</button>
+      </div>
+
+      <div class="dual-layout">
+        <div class="column-lane">
+          <div class="lane-label">Paper: Left Column</div>
+          <div id="leftColumnContainer"></div>
         </div>
-        <div id="tableContainer"></div>
+
+        <div class="column-lane">
+          <div class="lane-label">Paper: Right Column</div>
+          <div id="rightColumnContainer"></div>
+        </div>
+      </div>
     </div>
   </main>
 
   <script>
     const fileInput = document.getElementById('fileInput');
     const dropzone = document.getElementById('dropzone');
-    const fileInfo = document.getElementById('fileInfo');
     const submitBtn = document.getElementById('submitBtn');
-    const modeSelect = document.getElementById('modeSelect');
+    const fileInfo = document.getElementById('fileInfo');
+    const dropLabel = document.getElementById('dropLabel');
     const loader = document.getElementById('loader');
     const uploadCard = document.getElementById('uploadCard');
     const resultArea = document.getElementById('resultArea');
 
-    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
-    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-    dropzone.addEventListener('drop', (e) => {
+    // --- Drag & Drop Handlers ---
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
         e.preventDefault();
-        dropzone.classList.remove('dragover');
-        if(e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFileSelect(); }
+        dropzone.classList.add('dragover');
+      });
     });
 
-    fileInput.onchange = handleFileSelect;
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+      });
+    });
 
-    function handleFileSelect() {
-        const file = fileInput.files[0];
-        if(file) {
-            fileInfo.innerHTML = `<strong>Selected:</strong> ${file.name}`;
-            dropzone.classList.add('file-selected');
-            document.getElementById('dropLabel').style.display = 'none';
-            submitBtn.disabled = false;
-        }
+    dropzone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files.length) {
+        fileInput.files = files;
+        updateFileLabel();
+      }
+    });
+
+    fileInput.onchange = updateFileLabel;
+
+    function updateFileLabel() {
+      const file = fileInput.files[0];
+      if (file) {
+        fileInfo.textContent = `Selected: ${file.name}`;
+        dropLabel.style.display = 'none';
+        dropzone.classList.add('file-selected');
+        submitBtn.disabled = false;
+      }
     }
 
+    // --- Processing ---
     submitBtn.onclick = async () => {
-        const mode = modeSelect.value;
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        formData.append('mode', mode);
+      const mode = document.getElementById('modeSelect').value;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('mode', mode);
 
-        submitBtn.style.display = 'none';
-        loader.style.display = 'block';
-        document.getElementById('processingMessage').style.display = 'block';
+      // UI State
+      submitBtn.style.display = 'none';
+      loader.style.display = 'block';
 
-        try {
-            const res = await fetch('/upload', { method: 'POST', body: formData });
-            if (mode === 'transcribe') {
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileInput.files[0].name.split('.')[0] + "_OCR.docx";
-                document.body.appendChild(a); a.click();
-                window.location.reload();
-            } else {
-                const data = await res.json();
-                renderGrid(data);
-            }
-        } catch (err) {
-            alert("Error processing file.");
-            window.location.reload();
+      try {
+        const response = await fetch('/upload', { method: 'POST', body: formData });
+        
+        if (mode === 'transcribe') {
+          const blob = await response.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `Transcription_${Date.now()}.docx`;
+          document.body.appendChild(a);
+          a.click();
+          window.location.reload();
+        } else {
+          const data = await response.json();
+          renderDashboard(data);
         }
+      } catch (err) {
+        alert("Extraction failed. Please check backend connection or API key.");
+        console.error(err);
+        window.location.reload();
+      }
     };
 
-    function renderGrid(data) {
-        uploadCard.style.display = 'none';
-        resultArea.style.display = 'block';
-        const container = document.getElementById('tableContainer');
-        container.innerHTML = '';
+    function renderDashboard(data) {
+      uploadCard.style.display = 'none';
+      resultArea.style.display = 'block';
 
-        data.forEach(section => {
-            let tableHtml = `
-                <div class="table-card">
-                    <h3 style="margin-top:0; color:var(--accent); font-size:16px; border-left: 4px solid var(--accent); padding-left:10px;">${section.table_title}</h3>
-                    <table>
-                        <thead>
-                            <tr><th style="width:20%">Code</th><th style="width:60%">Subject</th><th style="width:20%; text-align:center;">Qty</th></tr>
-                        </thead>
-                        <tbody>
-            `;
-            section.items.forEach(item => {
-                const qtyClass = item.qty == "0" ? "qty-highlight qty-zero" : "qty-highlight";
-                tableHtml += `
-                    <tr>
-                        <td style="font-family:monospace; font-weight:600; color:var(--navy);">${item.code}</td>
-                        <td title="${item.subject}">${item.subject}</td>
-                        <td style="text-align:center;"><span class="${qtyClass}">${item.qty}</span></td>
-                    </tr>
-                `;
-            });
-            tableHtml += `</tbody></table></div>`;
-            container.innerHTML += tableHtml;
-        });
+      const leftContainer = document.getElementById('leftColumnContainer');
+      const rightContainer = document.getElementById('rightColumnContainer');
+
+      if (!data || data.length === 0) {
+        leftContainer.innerHTML = "<p>No data found.</p>";
+        return;
+      }
+
+      data.forEach(section => {
+        const tableHtml = `
+          <div class="table-card">
+            <h3>${section.table_title}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:75px">Code</th>
+                  <th>Subject</th>
+                  <th class="qty-cell">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${section.items.map(item => `
+                  <tr>
+                    <td style="font-family:monospace; font-weight:600;">${item.code}</td>
+                    <td>${item.subject}</td>
+                    <td class="qty-cell">
+                      <span class="qty-badge ${item.qty == '0' ? 'qty-zero' : ''}">
+                        ${item.qty}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        // Preserving Spatial Orientation:
+        if (section.column_position === 'right_col') {
+          rightContainer.insertAdjacentHTML('beforeend', tableHtml);
+        } else {
+          leftContainer.insertAdjacentHTML('beforeend', tableHtml);
+        }
+      });
     }
   </script>
 </body>
