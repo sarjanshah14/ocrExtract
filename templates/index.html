@@ -7,133 +7,134 @@
   <style>
     :root {
       --navy: #0b2545;
-      --soft-bg: #f3f7fb;
+      --soft-bg: #f8fafc;
       --card-bg: #ffffff;
-      --muted-gray: #8b9bb5;
+      --muted-gray: #64748b;
       --accent: #ff7a3d;
-      --dashed-blue: #9ec5ff;
-      --success-green: #388e3c;
-      --radius: 14px;
-      --shadow: 0 8px 24px rgba(11,37,69,0.08);
-      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --dashed-blue: #cbd5e1;
+      --success-green: #10b981;
+      --radius: 12px;
+      --shadow: 0 4px 15px rgba(0,0,0,0.05);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    html, body { height: 100%; margin: 0; background: var(--soft-bg); color: var(--navy); }
+    body { margin: 0; background: var(--soft-bg); color: var(--navy); line-height: 1.5; }
 
     header {
-      width: 100%; background: var(--navy); color: white; padding: 22px 16px;
-      box-sizing: border-box; text-align: center; position: fixed; top: 0; left: 0;
-      z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 100%; background: var(--navy); color: white; padding: 18px;
+      text-align: center; position: fixed; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    header h1 { margin: 0; font-weight: 800; letter-spacing: 2px; font-size: 14px; text-transform: uppercase; }
+    header h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; }
 
     .page-wrap {
+      max-width: 1400px; margin: 0 auto; padding: 100px 20px 60px;
       display: flex; flex-direction: column; align-items: center;
-      min-height: 100vh; padding: 120px 20px 60px; box-sizing: border-box;
     }
 
     /* --- UPLOAD CARD --- */
     .upload-card {
-      width: 100%; max-width: 550px; background: var(--card-bg);
+      width: 100%; max-width: 500px; background: var(--card-bg);
       border-radius: var(--radius); box-shadow: var(--shadow);
-      padding: 40px; text-align: center; transition: transform 0.3s ease;
+      padding: 35px; text-align: center; margin-top: 40px;
     }
-    .upload-card h2 { margin: 0 0 10px; font-size: 22px; font-weight: 700; }
-    .subtitle { font-size: 14px; color: var(--muted-gray); margin-bottom: 30px; }
+    .upload-card h2 { margin: 0 0 8px; font-size: 20px; }
+    .subtitle { font-size: 14px; color: var(--muted-gray); margin-bottom: 25px; }
 
     .mode-container {
-      text-align: left; background: #f9fbff; border: 1px solid #e1e8f0;
-      padding: 20px; border-radius: 12px; margin-bottom: 25px;
+      text-align: left; background: #f1f5f9; padding: 15px;
+      border-radius: 10px; margin-bottom: 20px; border: 1px solid #e2e8f0;
     }
-    .mode-container label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted-gray); }
+    .mode-container label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted-gray); }
     select {
-      width: 100%; margin-top: 10px; padding: 12px; border-radius: 8px;
-      border: 1px solid var(--dashed-blue); background: white; font-size: 15px; outline: none;
+      width: 100%; margin-top: 8px; padding: 10px; border-radius: 6px;
+      border: 1px solid var(--dashed-blue); background: white; font-size: 14px;
     }
 
     .dropzone {
-      border-radius: 12px; padding: 40px 20px; border: 2px dashed var(--dashed-blue);
-      display: flex; flex-direction: column; align-items: center; cursor: pointer;
-      background: linear-gradient(180deg, rgba(158,197,255,0.05) 0%, #fff 100%);
-      transition: all 0.2s ease;
+      border-radius: 10px; padding: 30px; border: 2px dashed var(--dashed-blue);
+      cursor: pointer; background: #fff; transition: 0.2s;
     }
-    .dropzone:hover { border-color: var(--accent); background: rgba(255,122,61,0.02); }
-    .dropzone.dragover { border-color: var(--accent); background: var(--accent-weak); transform: scale(1.02); }
-    .dropzone.file-selected { border-color: var(--success-green); background: #f0fdf4; }
-
-    .drop-icon { width: 50px; height: 50px; margin-bottom: 15px; color: var(--dashed-blue); }
-    .drop-text { font-size: 16px; font-weight: 600; }
-    #fileInfo { margin-top: 10px; font-size: 13px; color: var(--success-green); font-weight: 600; }
+    .dropzone:hover { border-color: var(--accent); background: #fffaf8; }
+    .dropzone.file-selected { border-color: var(--success-green); background: #f0fdfa; }
+    .drop-text { font-size: 14px; font-weight: 600; margin-top: 10px; }
+    #fileInfo { margin-top: 8px; font-size: 12px; color: var(--success-green); font-weight: 700; }
 
     input[type=file] { display: none; }
 
     .btn {
-      display: block; width: 100%; margin-top: 25px; padding: 16px;
-      border-radius: 50px; background: var(--accent); color: white;
-      font-weight: 700; border: none; cursor: pointer; font-size: 16px;
-      box-shadow: 0 4px 12px rgba(255,122,61,0.3); transition: all 0.2s;
+      display: block; width: 100%; margin-top: 20px; padding: 14px;
+      border-radius: 8px; background: var(--accent); color: white;
+      font-weight: 700; border: none; cursor: pointer; transition: 0.2s;
     }
-    .btn:hover { background: #e66a33; transform: translateY(-1px); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
 
     /* --- RESULTS DASHBOARD --- */
-    #resultArea { display: none; width: 100%; max-width: 1300px; }
+    #resultArea { display: none; width: 100%; }
     
     .dashboard-header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;
     }
 
     .dual-layout {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* Two Equal Columns */
-      gap: 30px;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px; /* Strong spacing between Left and Right columns */
       align-items: start;
     }
 
-    @media (max-width: 1000px) {
-      .dual-layout { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .dual-layout { grid-template-columns: 1fr; gap: 20px; }
     }
 
-    .column-lane { display: flex; flex-direction: column; gap: 20px; }
-    .lane-label { 
-      font-size: 12px; font-weight: 800; color: var(--muted-gray); 
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .lane-label::after { content: ""; height: 1px; background: #e2e8f0; flex-grow: 1; }
-
-    .table-card {
-      background: white; border-radius: 12px; padding: 25px;
-      box-shadow: var(--shadow); border-top: 4px solid var(--navy);
-    }
-    .table-card h3 { margin: 0 0 15px 0; font-size: 18px; color: var(--accent); }
-
-    table { width: 100%; border-collapse: collapse; }
-    th { 
-      text-align: left; padding: 12px 8px; background: #f8fafc; 
-      font-size: 12px; font-weight: 700; border-bottom: 2px solid #edf2f7; 
-    }
-    td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .column-lane { display: flex; flex-direction: column; }
     
-    .qty-cell { text-align: center; width: 60px; }
-    .qty-badge {
-      display: inline-block; min-width: 32px; padding: 4px 8px;
-      border-radius: 6px; font-weight: 800; font-size: 13px;
-      background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5;
+    .lane-label { 
+      font-size: 11px; font-weight: 800; color: var(--muted-gray); 
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;
+      background: #e2e8f0; padding: 6px 12px; border-radius: 4px; align-self: flex-start;
     }
-    .qty-zero { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
 
-    /* --- LOADING STATE --- */
+    /* --- COMPACT TABLE CARDS --- */
+    .table-card {
+      background: white; border-radius: var(--radius);
+      box-shadow: var(--shadow); border: 1px solid #e2e8f0;
+      margin-bottom: 35px; /* Separation between stacked tables */
+      overflow: hidden;
+    }
+    .table-card h3 { 
+      margin: 0; padding: 12px 18px; font-size: 15px; 
+      color: white; background: var(--navy); 
+    }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th { 
+      text-align: left; padding: 10px 15px; background: #f8fafc; 
+      font-size: 11px; text-transform: uppercase; color: var(--muted-gray);
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td { padding: 8px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+    
+    tr:hover td { background-color: #fcfcfc; }
+
+    .qty-cell { text-align: center; width: 50px; }
+    .qty-badge {
+      display: inline-block; min-width: 28px; padding: 2px 6px;
+      border-radius: 4px; font-weight: 700; font-size: 12px;
+      background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5;
+    }
+    .qty-zero { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; font-weight: 400; }
+
+    /* --- LOADING --- */
     .loading-overlay { display: none; margin: 20px 0; }
     .spinner {
-      width: 40px; height: 40px; border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--accent); border-radius: 50%;
-      animation: spin 1s linear infinite; margin: 0 auto 15px;
+      width: 30px; height: 30px; border: 3px solid #f3f3f3;
+      border-top: 3px solid var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 10px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    #statusText { font-weight: 600; font-size: 14px; color: var(--navy); }
-
   </style>
 </head>
 <body>
@@ -143,47 +144,44 @@
   <main class="page-wrap">
     <div class="upload-card" id="uploadCard">
       <h2>Process Document</h2>
-      <p class="subtitle">Preserves two-column layout and logs empty quantities as 0.</p>
+      <p class="subtitle">Extracting quantities with two-column precision.</p>
 
       <div class="mode-container">
-        <label>Extraction Mode</label>
+        <label>Mode</label>
         <select id="modeSelect">
-          <option value="extract">Code & Qty Extraction (Side-by-Side)</option>
-          <option value="transcribe">Full Handwriting Transcription (.docx)</option>
+          <option value="extract">Quantity Extraction (Visual Grid)</option>
+          <option value="transcribe">Handwriting OCR (.docx)</option>
         </select>
       </div>
 
       <input type="file" id="fileInput" accept="image/*,application/pdf" />
       <label for="fileInput" class="dropzone" id="dropzone">
-        <svg class="drop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-        </svg>
-        <div class="drop-text" id="dropLabel">Drag & Drop or Click to Browse</div>
+        <div class="drop-text" id="dropLabel">Browse or Drop File</div>
         <div id="fileInfo"></div>
       </label>
 
       <div class="loading-overlay" id="loader">
         <div class="spinner"></div>
-        <div id="statusText">Analyzing layout & handwriting...</div>
+        <div style="font-size:12px; color:var(--muted-gray)">Processing Layout...</div>
       </div>
 
-      <button id="submitBtn" class="btn" disabled>Start Extraction</button>
+      <button id="submitBtn" class="btn" disabled>Run Extraction</button>
     </div>
 
     <div id="resultArea">
       <div class="dashboard-header">
-        <h2 style="margin:0;">Extracted Data Dashboard</h2>
-        <button class="btn" style="margin:0; width:auto; padding:10px 25px;" onclick="window.location.reload()">New Upload</button>
+        <h2 style="margin:0; font-size: 18px;">Extraction Results</h2>
+        <button class="btn" style="margin:0; width:auto; padding:8px 20px; font-size:12px;" onclick="window.location.reload()">Start New</button>
       </div>
 
       <div class="dual-layout">
         <div class="column-lane">
-          <div class="lane-label">Paper: Left Column</div>
+          <div class="lane-label">Left Side of Paper</div>
           <div id="leftColumnContainer"></div>
         </div>
 
         <div class="column-lane">
-          <div class="lane-label">Paper: Right Column</div>
+          <div class="lane-label">Right Side of Paper</div>
           <div id="rightColumnContainer"></div>
         </div>
       </div>
@@ -192,57 +190,25 @@
 
   <script>
     const fileInput = document.getElementById('fileInput');
-    const dropzone = document.getElementById('dropzone');
     const submitBtn = document.getElementById('submitBtn');
-    const fileInfo = document.getElementById('fileInfo');
-    const dropLabel = document.getElementById('dropLabel');
+    const dropzone = document.getElementById('dropzone');
     const loader = document.getElementById('loader');
-    const uploadCard = document.getElementById('uploadCard');
-    const resultArea = document.getElementById('resultArea');
 
-    // --- Drag & Drop Handlers ---
-    ['dragenter', 'dragover'].forEach(name => {
-      dropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropzone.classList.add('dragover');
-      });
-    });
-
-    ['dragleave', 'drop'].forEach(name => {
-      dropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-      });
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-      const files = e.dataTransfer.files;
-      if (files.length) {
-        fileInput.files = files;
-        updateFileLabel();
-      }
-    });
-
-    fileInput.onchange = updateFileLabel;
-
-    function updateFileLabel() {
-      const file = fileInput.files[0];
-      if (file) {
-        fileInfo.textContent = `Selected: ${file.name}`;
-        dropLabel.style.display = 'none';
+    fileInput.onchange = () => {
+      if (fileInput.files[0]) {
+        document.getElementById('fileInfo').textContent = "File Ready: " + fileInput.files[0].name;
+        document.getElementById('dropLabel').style.display = 'none';
         dropzone.classList.add('file-selected');
         submitBtn.disabled = false;
       }
-    }
+    };
 
-    // --- Processing ---
     submitBtn.onclick = async () => {
       const mode = document.getElementById('modeSelect').value;
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
       formData.append('mode', mode);
 
-      // UI State
       submitBtn.style.display = 'none';
       loader.style.display = 'block';
 
@@ -251,11 +217,9 @@
         
         if (mode === 'transcribe') {
           const blob = await response.blob();
-          const downloadUrl = window.URL.createObjectURL(blob);
+          const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.href = downloadUrl;
-          a.download = `Transcription_${Date.now()}.docx`;
-          document.body.appendChild(a);
+          a.href = url; a.download = `OCR_Result.docx`;
           a.click();
           window.location.reload();
         } else {
@@ -263,23 +227,17 @@
           renderDashboard(data);
         }
       } catch (err) {
-        alert("Extraction failed. Please check backend connection or API key.");
-        console.error(err);
+        alert("Error processing document.");
         window.location.reload();
       }
     };
 
     function renderDashboard(data) {
-      uploadCard.style.display = 'none';
-      resultArea.style.display = 'block';
+      document.getElementById('uploadCard').style.display = 'none';
+      document.getElementById('resultArea').style.display = 'block';
 
-      const leftContainer = document.getElementById('leftColumnContainer');
-      const rightContainer = document.getElementById('rightColumnContainer');
-
-      if (!data || data.length === 0) {
-        leftContainer.innerHTML = "<p>No data found.</p>";
-        return;
-      }
+      const left = document.getElementById('leftColumnContainer');
+      const right = document.getElementById('rightColumnContainer');
 
       data.forEach(section => {
         const tableHtml = `
@@ -288,7 +246,7 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width:75px">Code</th>
+                  <th style="width:70px">Code</th>
                   <th>Subject</th>
                   <th class="qty-cell">Qty</th>
                 </tr>
@@ -296,12 +254,10 @@
               <tbody>
                 ${section.items.map(item => `
                   <tr>
-                    <td style="font-family:monospace; font-weight:600;">${item.code}</td>
-                    <td>${item.subject}</td>
+                    <td style="font-family:monospace; color:#475569;">${item.code}</td>
+                    <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.subject}</td>
                     <td class="qty-cell">
-                      <span class="qty-badge ${item.qty == '0' ? 'qty-zero' : ''}">
-                        ${item.qty}
-                      </span>
+                      <span class="qty-badge ${item.qty == '0' ? 'qty-zero' : ''}">${item.qty}</span>
                     </td>
                   </tr>
                 `).join('')}
@@ -310,11 +266,10 @@
           </div>
         `;
 
-        // Preserving Spatial Orientation:
         if (section.column_position === 'right_col') {
-          rightContainer.insertAdjacentHTML('beforeend', tableHtml);
+          right.insertAdjacentHTML('beforeend', tableHtml);
         } else {
-          leftContainer.insertAdjacentHTML('beforeend', tableHtml);
+          left.insertAdjacentHTML('beforeend', tableHtml);
         }
       });
     }
