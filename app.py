@@ -43,24 +43,29 @@ TRANSCRIPTION_PROMPT = """
 """
 
 STRUCTURED_EXTRACT_PROMPT = """
-Extract the handwritten order quantities from this Navneet Indent Form.
-The output MUST be a valid JSON list of objects. 
-
-Return ONLY raw JSON. No markdown formatting.
-
-Structure:
-[
-  {
-    "table_title": "Standard/Grade Name (e.g. Std 9)",
-    "items": [
-      {"code": "N 101", "qty": "25", "subject": "Gujarati"}
-    ]
-  }
-]
-RULES:
-1. Scan for the 'CODE' and 'QTY' columns.
-2. Only include rows where a quantity is handwritten.
-3. If the handwritten number is unclear, use the surrounding context to provide the best estimate.
+{
+  "TASK": "Extract ALL data from this TWO-COLUMN Navneet Indent Form.",
+  "FORMAT": "JSON list of objects.",
+  "COGNITIVE_STRATEGY": [
+    "Identify the form as a TWO-COLUMN layout. Scan the LEFT column first, then the RIGHT column.",
+    "SCAN every row for section headers (e.g., 'ધોરણ 6', 'ધોરણ 8', 'For Office Use Only').",
+    "For EVERY Code/Subject row: if a quantity is handwritten, extract it. If the quantity cell is empty or has no handwriting, log it as '0'."
+  ],
+  "OUTPUT_STRUCTURE": [
+    {
+      "table_title": "Section Heading (e.g., ધોરણ 8)",
+      "items": [
+        {"code": "M 4091", "subject": "ગુજરાતી (FL)", "qty": "35"},
+        {"code": "M 4092", "subject": "હિન્દી (SL)", "qty": "0"}
+      ]
+    }
+  ],
+  "STRICT_RULES": [
+    "Do not miss the right-hand side of the page.",
+    "Log missing quantities as '0'—do not skip the row.",
+    "Return ONLY raw JSON."
+  ]
+}
 """
 
 # --------------------------------------------------

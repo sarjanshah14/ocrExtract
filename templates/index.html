@@ -20,18 +20,17 @@
     }
     header h1{margin:0;font-weight:800;letter-spacing:2px;font-size:14px;text-transform:uppercase;}
 
-    .page-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:120px 20px 40px;box-sizing:border-box;}
+    .page-wrap{display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:120px 20px 40px;box-sizing:border-box;}
 
     .card{width:100%;max-width:550px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:42px 40px;box-sizing:border-box;text-align:center}
     .card h2{margin:0 0 10px;font-size:20px;color:#102a4a;font-weight:700}
     .subtitle{font-size:13px;color:var(--muted-gray);margin-bottom:26px}
 
-    /* Selection Box */
     .mode-container {
         text-align: left; background: #f9fbff; border: 1px solid #e1e8f0;
         padding: 15px; border-radius: 10px; margin-bottom: 25px;
     }
-    .mode-container label { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; }
+    .mode-container label { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; }
     select { 
         width: 100%; margin-top: 8px; padding: 10px; border-radius: 6px; 
         border: 1px solid var(--dashed-blue); background: white; font-size: 14px; outline: none;
@@ -58,23 +57,38 @@
       font-size:15px;width: 100%; transition: 0.2s;
     }
     .btn:disabled{opacity:0.4;cursor:not-allowed;}
-    .btn:hover:not(:disabled) { background: #e66a33; }
 
-    /* Results UI */
-    #resultArea { display: none; width: 100%; max-width: 800px; margin-top: 20px; }
-    .table-card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: var(--shadow); }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: var(--navy); font-size: 13px; }
-    td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-    .qty-highlight { background: #fff7ed; color: #9a3412; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid #ffedd5; }
+    /* GRID RESULTS UI */
+    #resultArea { display: none; width: 100%; max-width: 1200px; margin-top: 20px; }
+    
+    #tableContainer { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); 
+      gap: 20px; 
+      align-items: start;
+    }
+
+    @media (max-width: 600px) {
+      #tableContainer { grid-template-columns: 1fr; }
+    }
+
+    .table-card { background: white; border-radius: 12px; padding: 20px; box-shadow: var(--shadow); height: fit-content; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+    th { text-align: left; padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: var(--navy); font-size: 12px; }
+    td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    
+    .qty-highlight { 
+      background: #fff7ed; color: #9a3412; font-weight: 700; padding: 4px 8px; 
+      border-radius: 6px; border: 1px solid #ffedd5; display: inline-block; min-width: 25px; text-align: center;
+    }
+    .qty-zero { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
     .spinner {
       border: 4px solid #f3f3f3; border-top: 4px solid var(--navy); border-radius: 50%;
       width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 25px auto; display: none;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    #processingMessage { display: none; color: var(--navy); font-weight: 600; margin-bottom: 10px; }
+    #processingMessage { display: none; color: var(--navy); font-weight: 600; margin-bottom: 10px; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -83,7 +97,7 @@
   <main class="page-wrap">
     <div class="card" id="uploadCard">
       <h2>Process Document</h2>
-      <div class="subtitle">Extract data from Navneet Indent Forms</div>
+      <div class="subtitle">Log quantities or transcribe text</div>
 
       <div class="mode-container">
           <label>Extraction Mode</label>
@@ -103,15 +117,15 @@
       </label>
 
       <div class="spinner" id="loader"></div>
-      <div id="processingMessage">Analyzing document pages...</div>
+      <div id="processingMessage">Analyzing document...</div>
       
       <button id="submitBtn" class="btn" disabled>Start Extraction</button>
     </div>
 
     <div id="resultArea">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 style="margin:0; color:var(--navy);">Extracted Data</h2>
-            <button onclick="window.location.reload()" class="btn" style="margin:0; width:auto; padding:8px 20px;">New Scan</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; color:var(--navy);">Extraction Summary</h2>
+            <button onclick="window.location.reload()" class="btn" style="margin:0; width:auto; padding:10px 25px;">New Scan</button>
         </div>
         <div id="tableContainer"></div>
     </div>
@@ -127,16 +141,12 @@
     const uploadCard = document.getElementById('uploadCard');
     const resultArea = document.getElementById('resultArea');
 
-    // Drag and Drop Logic
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
     dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
     dropzone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropzone.classList.remove('dragover');
-        if(e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFileSelect();
-        }
+        if(e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFileSelect(); }
     });
 
     fileInput.onchange = handleFileSelect;
@@ -144,7 +154,7 @@
     function handleFileSelect() {
         const file = fileInput.files[0];
         if(file) {
-            fileInfo.innerHTML = `<strong>Selected:</strong> ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
+            fileInfo.innerHTML = `<strong>Selected:</strong> ${file.name}`;
             dropzone.classList.add('file-selected');
             document.getElementById('dropLabel').style.display = 'none';
             submitBtn.disabled = false;
@@ -153,71 +163,62 @@
 
     submitBtn.onclick = async () => {
         const mode = modeSelect.value;
-        const file = fileInput.files[0];
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileInput.files[0]);
         formData.append('mode', mode);
 
-        // UI State: Loading
         submitBtn.style.display = 'none';
         loader.style.display = 'block';
         document.getElementById('processingMessage').style.display = 'block';
 
         try {
             const res = await fetch('/upload', { method: 'POST', body: formData });
-            
             if (mode === 'transcribe') {
                 const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = file.name.split('.')[0] + "_Transcription.docx";
-                document.body.appendChild(a);
-                a.click();
+                a.download = fileInput.files[0].name.split('.')[0] + "_OCR.docx";
+                document.body.appendChild(a); a.click();
                 window.location.reload();
             } else {
                 const data = await res.json();
-                renderTables(data);
+                renderGrid(data);
             }
         } catch (err) {
-            alert("Extraction failed. Please check the API Key or file format.");
-            console.error(err);
+            alert("Error processing file.");
             window.location.reload();
         }
     };
 
-    function renderTables(data) {
+    function renderGrid(data) {
         uploadCard.style.display = 'none';
         resultArea.style.display = 'block';
         const container = document.getElementById('tableContainer');
         container.innerHTML = '';
 
-        if(!data || data.length === 0) {
-            container.innerHTML = '<div class="table-card">No handwritten quantities detected.</div>';
-            return;
-        }
-
         data.forEach(section => {
-            let html = `
+            let tableHtml = `
                 <div class="table-card">
-                    <h3 style="margin-top:0; color:var(--accent); font-size:18px;">${section.table_title}</h3>
+                    <h3 style="margin-top:0; color:var(--accent); font-size:16px; border-left: 4px solid var(--accent); padding-left:10px;">${section.table_title}</h3>
                     <table>
                         <thead>
-                            <tr><th>Code</th><th>Subject Name</th><th style="text-align:center;">Qty</th></tr>
+                            <tr><th style="width:20%">Code</th><th style="width:60%">Subject</th><th style="width:20%; text-align:center;">Qty</th></tr>
                         </thead>
                         <tbody>
             `;
             section.items.forEach(item => {
-                html += `
+                const qtyClass = item.qty == "0" ? "qty-highlight qty-zero" : "qty-highlight";
+                tableHtml += `
                     <tr>
-                        <td style="font-family:monospace; font-weight:600;">${item.code}</td>
-                        <td>${item.subject}</td>
-                        <td style="text-align:center;"><span class="qty-highlight">${item.qty}</span></td>
+                        <td style="font-family:monospace; font-weight:600; color:var(--navy);">${item.code}</td>
+                        <td title="${item.subject}">${item.subject}</td>
+                        <td style="text-align:center;"><span class="${qtyClass}">${item.qty}</span></td>
                     </tr>
                 `;
             });
-            html += `</tbody></table></div>`;
-            container.innerHTML += html;
+            tableHtml += `</tbody></table></div>`;
+            container.innerHTML += tableHtml;
         });
     }
   </script>
