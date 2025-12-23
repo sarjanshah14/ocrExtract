@@ -11,7 +11,7 @@
       --card-bg: #ffffff;
       --muted-gray: #64748b;
       --accent: #ff7a3d;
-      --dashed-blue: #cbd5e1;
+      --border: #e2e8f0;
       --success-green: #10b981;
       --radius: 12px;
       --shadow: 0 4px 15px rgba(0,0,0,0.05);
@@ -28,106 +28,110 @@
     header h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; }
 
     .page-wrap {
-      max-width: 1400px; margin: 0 auto; padding: 100px 20px 60px;
+      max-width: 1200px; margin: 0 auto; padding: 100px 20px 60px;
       display: flex; flex-direction: column; align-items: center;
     }
 
-    /* --- UPLOAD CARD --- */
     .upload-card {
-      width: 100%; max-width: 500px; background: var(--card-bg);
+      width: 100%; max-width: 480px; background: var(--card-bg);
       border-radius: var(--radius); box-shadow: var(--shadow);
-      padding: 35px; text-align: center; margin-top: 40px;
+      padding: 30px; text-align: center; margin-top: 40px;
     }
-    .upload-card h2 { margin: 0 0 8px; font-size: 20px; }
+    .upload-card h2 { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
     .subtitle { font-size: 14px; color: var(--muted-gray); margin-bottom: 25px; }
 
     .mode-container {
       text-align: left; background: #f1f5f9; padding: 15px;
-      border-radius: 10px; margin-bottom: 20px; border: 1px solid #e2e8f0;
+      border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border);
     }
-    .mode-container label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted-gray); }
+    .mode-container label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted-gray); }
     select {
       width: 100%; margin-top: 8px; padding: 10px; border-radius: 6px;
-      border: 1px solid var(--dashed-blue); background: white; font-size: 14px;
+      border: 1px solid #cbd5e1; background: white; font-size: 14px; outline: none;
     }
 
     .dropzone {
-      border-radius: 10px; padding: 30px; border: 2px dashed var(--dashed-blue);
+      border-radius: 10px; padding: 40px 20px; border: 2px dashed #cbd5e1;
       cursor: pointer; background: #fff; transition: 0.2s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     .dropzone:hover { border-color: var(--accent); background: #fffaf8; }
     .dropzone.file-selected { border-color: var(--success-green); background: #f0fdfa; }
-    .drop-text { font-size: 14px; font-weight: 600; margin-top: 10px; }
-    #fileInfo { margin-top: 8px; font-size: 12px; color: var(--success-green); font-weight: 700; }
+    
+    .drop-icon { font-size: 32px; margin-bottom: 10px; }
+    .drop-text { font-size: 15px; font-weight: 600; color: var(--navy); }
+    #fileInfo { margin-top: 10px; font-size: 13px; color: var(--success-green); font-weight: 700; }
 
     input[type=file] { display: none; }
 
     .btn {
-      display: block; width: 100%; margin-top: 20px; padding: 14px;
+      display: block; width: 100%; margin-top: 20px; padding: 15px;
       border-radius: 8px; background: var(--accent); color: white;
-      font-weight: 700; border: none; cursor: pointer; transition: 0.2s;
+      font-weight: 700; border: none; cursor: pointer; transition: 0.2s; font-size: 15px;
     }
     .btn:hover { opacity: 0.9; transform: translateY(-1px); }
     .btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
 
-    /* --- RESULTS DASHBOARD --- */
     #resultArea { display: none; width: 100%; }
     
     .dashboard-header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;
+      margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 15px;
     }
 
     .dual-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 40px; /* Strong spacing between Left and Right columns */
+      gap: 50px;
       align-items: start;
     }
 
-    @media (max-width: 900px) {
-      .dual-layout { grid-template-columns: 1fr; gap: 20px; }
+    @media (max-width: 950px) {
+      .dual-layout { grid-template-columns: 1fr; gap: 30px; }
     }
 
-    .column-lane { display: flex; flex-direction: column; }
-    
     .lane-label { 
-      font-size: 11px; font-weight: 800; color: var(--muted-gray); 
-      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;
-      background: #e2e8f0; padding: 6px 12px; border-radius: 4px; align-self: flex-start;
+      font-size: 12px; font-weight: 800; color: var(--muted-gray); 
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;
+      display: flex; align-items: center; gap: 10px;
     }
+    .lane-label::after { content: ""; height: 1px; background: var(--border); flex-grow: 1; }
 
-    /* --- COMPACT TABLE CARDS --- */
     .table-card {
-      background: white; border-radius: var(--radius);
-      box-shadow: var(--shadow); border: 1px solid #e2e8f0;
-      margin-bottom: 35px; /* Separation between stacked tables */
+      background: white; border-radius: 8px;
+      box-shadow: var(--shadow); border: 1px solid var(--border);
+      margin-bottom: 40px;
       overflow: hidden;
     }
-    .table-card h3 { 
-      margin: 0; padding: 12px 18px; font-size: 15px; 
-      color: white; background: var(--navy); 
+    .table-header-flex {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--navy); padding: 10px 15px;
     }
-
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    th { 
-      text-align: left; padding: 10px 15px; background: #f8fafc; 
-      font-size: 11px; text-transform: uppercase; color: var(--muted-gray);
-      border-bottom: 1px solid #e2e8f0;
-    }
-    td { padding: 8px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+    .table-card h3 { margin: 0; font-size: 14px; color: white; font-weight: 700; }
     
-    tr:hover td { background-color: #fcfcfc; }
+    .copy-pill {
+      background: rgba(255,255,255,0.15); color: white; border: none;
+      font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 4px;
+      cursor: pointer; text-transform: uppercase; transition: 0.2s;
+    }
+    .copy-pill:hover { background: rgba(255,255,255,0.3); }
 
-    .qty-cell { text-align: center; width: 50px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { 
+      text-align: left; padding: 8px 12px; background: #f8fafc; 
+      font-size: 11px; text-transform: uppercase; color: var(--muted-gray);
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 6px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+    
+    .qty-cell { text-align: center; width: 60px; }
     .qty-badge {
-      display: inline-block; min-width: 28px; padding: 2px 6px;
-      border-radius: 4px; font-weight: 700; font-size: 12px;
+      display: inline-block; min-width: 24px; padding: 2px 8px;
+      border-radius: 4px; font-weight: 800; font-size: 12px;
       background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5;
     }
-    .qty-zero { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; font-weight: 400; }
+    .qty-zero { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; font-weight: 400; }
 
-    /* --- LOADING --- */
     .loading-overlay { display: none; margin: 20px 0; }
     .spinner {
       width: 30px; height: 30px; border: 3px solid #f3f3f3;
@@ -147,41 +151,42 @@
       <p class="subtitle">Extracting quantities with two-column precision.</p>
 
       <div class="mode-container">
-        <label>Mode</label>
+        <label>Extraction Mode</label>
         <select id="modeSelect">
-          <option value="extract">Quantity Extraction (Visual Grid)</option>
+          <option value="extract">Code & Qty Extraction</option>
           <option value="transcribe">Handwriting OCR (.docx)</option>
         </select>
       </div>
 
       <input type="file" id="fileInput" accept="image/*,application/pdf" />
       <label for="fileInput" class="dropzone" id="dropzone">
-        <div class="drop-text" id="dropLabel">Browse or Drop File</div>
+        <div class="drop-icon">📂</div>
+        <div class="drop-text" id="dropLabel">Click to Browse or Drop File</div>
         <div id="fileInfo"></div>
       </label>
 
       <div class="loading-overlay" id="loader">
         <div class="spinner"></div>
-        <div style="font-size:12px; color:var(--muted-gray)">Processing Layout...</div>
+        <div style="font-size:12px; font-weight: 600;">Analyzing Document Layout...</div>
       </div>
 
-      <button id="submitBtn" class="btn" disabled>Run Extraction</button>
+      <button id="submitBtn" class="btn" disabled>Start Extraction</button>
     </div>
 
     <div id="resultArea">
       <div class="dashboard-header">
-        <h2 style="margin:0; font-size: 18px;">Extraction Results</h2>
-        <button class="btn" style="margin:0; width:auto; padding:8px 20px; font-size:12px;" onclick="window.location.reload()">Start New</button>
+        <h2 style="margin:0; font-size: 18px;">Extracted Data</h2>
+        <button class="btn" style="margin:0; width:auto; padding:8px 20px; font-size:13px;" onclick="window.location.reload()">New Upload</button>
       </div>
 
       <div class="dual-layout">
         <div class="column-lane">
-          <div class="lane-label">Left Side of Paper</div>
+          <div class="lane-label">Left Column</div>
           <div id="leftColumnContainer"></div>
         </div>
 
         <div class="column-lane">
-          <div class="lane-label">Right Side of Paper</div>
+          <div class="lane-label">Right Column</div>
           <div id="rightColumnContainer"></div>
         </div>
       </div>
@@ -196,7 +201,7 @@
 
     fileInput.onchange = () => {
       if (fileInput.files[0]) {
-        document.getElementById('fileInfo').textContent = "File Ready: " + fileInput.files[0].name;
+        document.getElementById('fileInfo').textContent = "Selected: " + fileInput.files[0].name;
         document.getElementById('dropLabel').style.display = 'none';
         dropzone.classList.add('file-selected');
         submitBtn.disabled = false;
@@ -214,12 +219,11 @@
 
       try {
         const response = await fetch('/upload', { method: 'POST', body: formData });
-        
         if (mode === 'transcribe') {
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.href = url; a.download = `OCR_Result.docx`;
+          a.href = url; a.download = `Transcription_${Date.now()}.docx`;
           a.click();
           window.location.reload();
         } else {
@@ -227,10 +231,23 @@
           renderDashboard(data);
         }
       } catch (err) {
-        alert("Error processing document.");
+        alert("Extraction failed.");
         window.location.reload();
       }
     };
+
+    function copyTable(tableId) {
+        const table = document.getElementById(tableId);
+        let text = "Code\tSubject\tQty\n";
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            text += `${cells[0].innerText}\t${cells[1].innerText}\t${cells[2].innerText}\n`;
+        });
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Table data copied to clipboard!");
+        });
+    }
 
     function renderDashboard(data) {
       document.getElementById('uploadCard').style.display = 'none';
@@ -239,11 +256,15 @@
       const left = document.getElementById('leftColumnContainer');
       const right = document.getElementById('rightColumnContainer');
 
-      data.forEach(section => {
+      data.forEach((section, index) => {
+        const tableId = `table-${index}`;
         const tableHtml = `
           <div class="table-card">
-            <h3>${section.table_title}</h3>
-            <table>
+            <div class="table-header-flex">
+                <h3>${section.table_title}</h3>
+                <button class="copy-pill" onclick="copyTable('${tableId}')">Copy Data</button>
+            </div>
+            <table id="${tableId}">
               <thead>
                 <tr>
                   <th style="width:70px">Code</th>
@@ -254,8 +275,8 @@
               <tbody>
                 ${section.items.map(item => `
                   <tr>
-                    <td style="font-family:monospace; color:#475569;">${item.code}</td>
-                    <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.subject}</td>
+                    <td style="font-family:monospace; font-weight:600;">${item.code}</td>
+                    <td>${item.subject}</td>
                     <td class="qty-cell">
                       <span class="qty-badge ${item.qty == '0' ? 'qty-zero' : ''}">${item.qty}</span>
                     </td>
