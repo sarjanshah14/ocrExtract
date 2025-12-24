@@ -44,36 +44,32 @@ TRANSCRIPTION_PROMPT = """
 
 STRUCTURED_EXTRACT_PROMPT = """
 {
-  "TASK": "Extract ALL data from this TWO-COLUMN Navneet Form while preserving spatial orientation.",
+  "TASK": "Universal Spatial Data Extraction for Two-Column Forms.",
   "FORMAT": "JSON list of objects.",
   "COGNITIVE_STRATEGY": [
-    "Identify the vertical center-line of the document.",
-    "Categorize sections (e.g., ધોરણ 6) based on their physical side: 'left_col' or 'right_col'.",
-    "Scan top-to-bottom for the LEFT side first, then top-to-bottom for the RIGHT side.",
-    "For EVERY row: transcribe ONLY the physically written quantity. If the box is empty, leave it blank."
+    "1. DOCUMENT MAPPING: Identify the vertical center-line dividing the page into two equal halves (Left Column / Right Column).",
+    "2. FULL-SWEEP SCAN: Scan from Y=0 (top) to Y=100 (absolute bottom) to ensure footer tables like 'For Office Use Only' are captured.",
+    "3. SECTIONING: Every distinct header block (shaded or bold) starts a new section. Assign each to 'left_col' or 'right_col'.",
+    "4. ROW VERIFICATION: For every horizontal row containing a 'CODE', 'SUBJECT', and 'QTY' box."
   ],
-  "STRICT_ANTI_GUESSING_RULES": [
-    "DO NOT GUESS: Do not assume a quantity is '0' if the box is empty.",
-    "DO NOT HALLUCINATE: Only extract numbers that are physically handwritten on the document.",
-    "EMPTY BOX HANDLING: If no quantity is entered in a row, set 'qty' to '' (empty string).",
-    "NO PREDICTION: Do not use surrounding rows to predict an empty box's value."
+  "STRICT_QUANTITY_RULES": [
+    "RULE A (Physical Priority): Transcribe ONLY what is handwritten. If a box is empty, log '0'.",
+    "RULE B (Scribble Protocol): If a quantity is crossed out, heavily scribbled over, or obscured by a correction mark, log '0'. Do not attempt to read the value under the scribble.",
+    "RULE C (No Hallucination): Never 'fill down' numbers. Each row is independent.",
+    "RULE D (Bottom Tables): Explicitly include all tables at the bottom of the page, even if they have different column widths than the main body."
   ],
   "OUTPUT_STRUCTURE": [
     {
-      "column_position": "left_col", 
-      "table_title": "ધોરણ 9",
-      "items": [{"code": "N 4101", "subject": "ગુજરાતી [FL]", "qty": "50"}]
-    },
-    {
-      "column_position": "right_col",
-      "table_title": "ધોરણ 10",
-      "items": [{"code": "C 4130", "subject": "ચિત્રકલા", "qty": ""}]
+      "column_position": "left_col/right_col",
+      "table_title": "Text found in the section header",
+      "items": [
+        {
+          "code": "Alpha-numeric code",
+          "subject": "Full subject string",
+          "qty": "Handwritten number or '0' if empty/scribbled"
+        }
+      ]
     }
-  ],
-  "STRICT_RULES": [
-    "Do not merge columns.",
-    "Every section must have a 'column_position' attribute: either 'left_col' or 'right_col'.",
-    "Return ONLY raw JSON."
   ]
 }
 """
