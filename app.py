@@ -50,7 +50,13 @@ STRUCTURED_EXTRACT_PROMPT = """
     "Identify the vertical center-line of the document.",
     "Categorize sections (e.g., ધોરણ 6) based on their physical side: 'left_col' or 'right_col'.",
     "Scan top-to-bottom for the LEFT side first, then top-to-bottom for the RIGHT side.",
-    "For EVERY row: if quantity is blank, log as '0'."
+    "For EVERY row: transcribe ONLY the physically written quantity. If the box is empty, leave it blank."
+  ],
+  "STRICT_ANTI_GUESSING_RULES": [
+    "DO NOT GUESS: Do not assume a quantity is '0' if the box is empty.",
+    "DO NOT HALLUCINATE: Only extract numbers that are physically handwritten on the document.",
+    "EMPTY BOX HANDLING: If no quantity is entered in a row, set 'qty' to '' (empty string).",
+    "NO PREDICTION: Do not use surrounding rows to predict an empty box's value."
   ],
   "OUTPUT_STRUCTURE": [
     {
@@ -61,7 +67,7 @@ STRUCTURED_EXTRACT_PROMPT = """
     {
       "column_position": "right_col",
       "table_title": "ધોરણ 10",
-      "items": [{"code": "N 4121", "subject": "ગુજરાતી [FL]", "qty": "80"}]
+      "items": [{"code": "C 4130", "subject": "ચિત્રકલા", "qty": ""}]
     }
   ],
   "STRICT_RULES": [
