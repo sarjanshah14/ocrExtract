@@ -1,6 +1,7 @@
 import os
 import io
 import json
+import base64
 from google import genai
 from PIL import Image, ImageEnhance
 from docx import Document
@@ -144,19 +145,23 @@ def upload():
 
         # MODE 2: TRANSCRIPTION (WORD DOC)
         else:
+            combined_text = "\n\n".join(results)  # Combine all pages with double newlines
+
             doc = Document()
             style = doc.styles['Normal']
             style.font.name = 'Arial Unicode MS'
             style.font.size = Pt(12)
-            
+
             for i, text in enumerate(results):
                 if i > 0: doc.add_section(WD_SECTION.NEW_PAGE)
                 doc.add_paragraph(text)
-            
+
             out_io = io.BytesIO()
             doc.save(out_io)
             out_io.seek(0)
-            return send_file(out_io, as_attachment=True, download_name=f"{os.path.splitext(file.filename)[0]}_OCR.docx")
+            docx_base64 = base64.b64encode(out_io.getvalue()).decode('utf-8')
+
+            return jsonify({"text": combined_text, "docx_base64": docx_base64})
 
     except Exception as e:
         return str(e), 500
