@@ -2,7 +2,7 @@
 env/
 venv/
 env1/  # Add your specific environment name
-
+.env
 # Bytecode files
 *.pyc
 __pycache__/
